@@ -47,7 +47,8 @@ async function carregarUsuario(){
   if(!supabaseClient) return;
   const { data } = await supabaseClient.auth.getUser();
   usuarioAtual = data?.user || null;
-  document.getElementById("usuarioLogado").innerText = usuarioAtual ? usuarioAtual.email : "Sem login";
+  const elUsuario = document.getElementById("usuarioLogado");
+  if(elUsuario) elUsuario.innerText = usuarioAtual ? usuarioAtual.email : "Sem login";
 }
 
 function abrirLogin(){
@@ -84,7 +85,8 @@ async function sair(){
     await supabaseClient.auth.signOut();
   }
   usuarioAtual = null;
-  document.getElementById("usuarioLogado").innerText = "Sem login";
+  const elUsuario = document.getElementById("usuarioLogado");
+  if(elUsuario) elUsuario.innerText = "Sem login";
   mostrarStatus("Você saiu do sistema.");
 }
 
@@ -121,6 +123,7 @@ function registroParaSupabase(r){
     km_inicial: r.kmInicial || null,
     km_final: r.kmFinal || null,
     km_rodado: r.kmRodado || null,
+    combustivel: r.combustivel || null,
     atividade: r.atividade || null,
     usuario_email: r.usuario_email || usuarioAtual?.email || null,
     ativo: r.ativo !== false,
@@ -163,6 +166,7 @@ function registroDoSupabase(r){
     kmInicial: r.km_inicial || "",
     kmFinal: r.km_final || "",
     kmRodado: r.km_rodado || "",
+    combustivel: r.combustivel || "",
     atividade: r.atividade || "",
     usuario_email: r.usuario_email || "",
     ativo: r.ativo !== false,

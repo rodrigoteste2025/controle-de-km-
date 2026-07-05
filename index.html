@@ -23,6 +23,7 @@
 <main class="container">
 
   <div id="status" class="status"></div>
+  <p id="statusOnline" style="display:none"></p>
 
   <section class="card aviso">
     <b>Funcionamento:</b> quando houver internet, o app baixa e envia dados para o Supabase. Sem internet, salva no celular e sincroniza depois.
@@ -35,15 +36,6 @@
     <div><strong id="totalCombustivel">0.00</strong>Litros</div>
   </section>
 
-  <section class="card">
-    <h2>Sincronização</h2>
-    <p id="statusOnline" class="texto-suave">Aguardando verificação.</p>
-    <div class="botoes">
-      <button class="btn-exportar" onclick="sincronizarTudo()">Sincronizar agora</button>
-      
-      <button class="btn-limpar" onclick="verificarConexao()">Verificar conexão</button>
-    </div>
-  </section>
 
   <section class="card cadastros">
     <button type="button" class="titulo-recolhivel" onclick="alternarCadastros()">

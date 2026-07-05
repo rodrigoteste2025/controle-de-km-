@@ -163,6 +163,7 @@ document.getElementById("formKm").addEventListener("submit", async function(e){
     kmInicial: Number(document.getElementById("kmInicial").value),
     kmFinal: "",
     kmRodado: "",
+    combustivel: "",
     atividade: normalizar(document.getElementById("atividade").value),
     usuario_email: usuarioAtual?.email || "",
     ativo: true
@@ -206,7 +207,17 @@ function obterRegistrosFiltrados(){
       && (mes === "" || mesItem === mes)
       && (ano === "" || anoItem === ano)
       && (veiculoFiltro === "" || item.veiculo === veiculoFiltro);
-  }).sort((a,b) => (b.dataSaida + b.horaSaida).localeCompare(a.dataSaida + a.horaSaida));
+  }).sort((a,b) => {
+    const aAberta = a.status === "ABERTO" || !a.kmFinal || !a.dataChegada;
+    const bAberta = b.status === "ABERTO" || !b.kmFinal || !b.dataChegada;
+
+    if(aAberta && !bAberta) return -1;
+    if(!aAberta && bAberta) return 1;
+
+    const dataA = (a.dataSaida || "") + (a.horaSaida || "");
+    const dataB = (b.dataSaida || "") + (b.horaSaida || "");
+    return dataB.localeCompare(dataA);
+  });
 }
 
 function renderizar(){
@@ -234,6 +245,7 @@ function renderizar(){
       <td data-label="Km Inicial">${item.kmInicial || "-"}</td>
       <td data-label="Km Final">${item.kmFinal || "-"}</td>
       <td data-label="Km Rodado">${item.kmRodado || "-"}</td>
+      <td data-label="Litros">${item.combustivel || "-"}</td>
       <td data-label="Atividade">${item.atividade || "-"}</td>
       <td data-label="Ação">
         ${item.status === "ABERTO" ? `<button class="btn-fechar" onclick="fecharViagem('${item.local_id}')">Fechar</button>` : ""}
@@ -250,6 +262,7 @@ function atualizarResumo(lista){
   document.getElementById("totalRegistros").innerText = lista.length;
   document.getElementById("viagensAbertas").innerText = lista.filter(r => r.status === "ABERTO").length;
   document.getElementById("totalKm").innerText = lista.reduce((s,r) => s + Number(r.kmRodado || 0), 0);
+  document.getElementById("totalCombustivel").innerText = lista.reduce((s,r) => s + Number(r.combustivel || 0), 0).toFixed(2);
 }
 
 function fecharViagem(id){
@@ -263,6 +276,7 @@ function fecharViagem(id){
   document.getElementById("fecharHoraChegada").value = horaAtual();
   document.getElementById("fecharKmFinal").value = item.kmFinal || "";
   document.getElementById("fecharFasa").value = item.fasa || "";
+  document.getElementById("fecharCombustivel").value = item.combustivel || "";
 
   document.getElementById("infoFechamento").innerHTML = `
     <b>Motorista:</b> ${item.motorista}<br>
@@ -303,6 +317,7 @@ async function salvarFechamento(){
   const dataChegada = document.getElementById("fecharDataChegada").value;
   const horaChegada = document.getElementById("fecharHoraChegada").value;
   const fasa = normalizar(document.getElementById("fecharFasa").value);
+  const combustivel = Number(document.getElementById("fecharCombustivel").value || 0);
 
   if(!dataChegada) return alert("Informe a data de chegada.");
   if(!horaChegada) return alert("Informe o horário de chegada.");
@@ -321,6 +336,7 @@ async function salvarFechamento(){
   item.horaChegada = horaChegada;
   item.tempo = tempo;
   item.fasa = fasa;
+  item.combustivel = combustivel;
   item.status = "FECHADO";
   item.usuario_email = usuarioAtual?.email || item.usuario_email || "";
   marcarPendente(item);
@@ -367,6 +383,7 @@ function gerarPDF(){
   if(lista.length === 0) return alert("Não há registros para gerar relatório.");
 
   const totalKm = lista.reduce((s,r) => s + Number(r.kmRodado || 0), 0);
+  const totalComb = lista.reduce((s,r) => s + Number(r.combustivel || 0), 0);
 
   const doc = new jsPDF("landscape","mm","a4");
   doc.setFontSize(14);
@@ -377,10 +394,11 @@ function gerarPDF(){
   doc.text(`Data de emissão: ${formatarData(dataAtual())}`, 14, 31);
   doc.text(`Total de registros: ${lista.length}`, 14, 37);
   doc.text(`Total KM: ${totalKm}`, 75, 37);
+  doc.text(`Total Litros: ${totalComb.toFixed(2)}`, 125, 37);
 
   doc.autoTable({
     startY: 45,
-    head: [["Status","Saída","Chegada","Tempo","FASA","Motorista","Veículo","Km Inicial","Km Final","Km Rodado","Atividade"]],
+    head: [["Status","Saída","Chegada","Tempo","FASA","Motorista","Veículo","Km Inicial","Km Final","Km Rodado","Litros","Atividade"]],
     body: lista.map(r => [
       r.status,
       `${formatarData(r.dataSaida)} ${r.horaSaida || ""}`,
@@ -392,11 +410,12 @@ function gerarPDF(){
       r.kmInicial || "-",
       r.kmFinal || "-",
       r.kmRodado || "-",
+      r.combustivel || "-",
       r.atividade || "-"
     ]),
     styles:{fontSize:7,cellPadding:2,overflow:"linebreak"},
     headStyles:{fillColor:[22,101,52],textColor:255},
-    columnStyles:{10:{cellWidth:65}}
+    columnStyles:{11:{cellWidth:60}}
   });
 
   doc.save(`relatorio_quilometragem_${nomeMes(mes)}_${ano || "todos"}.pdf`);
@@ -406,9 +425,9 @@ function exportarCSV(){
   const lista = obterRegistrosFiltrados();
   if(lista.length === 0) return alert("Não há registros para exportar.");
 
-  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Atividade\n";
+  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Litros;Atividade\n";
   lista.forEach(r => {
-    csv += `${r.status};${formatarData(r.dataSaida)};${r.horaSaida};${r.dataChegada ? formatarData(r.dataChegada) : ""};${r.horaChegada};${r.tempo};${r.fasa};${r.motorista};${r.veiculo};${r.kmInicial};${r.kmFinal};${r.kmRodado};${r.atividade}\n`;
+    csv += `${r.status};${formatarData(r.dataSaida)};${r.horaSaida};${r.dataChegada ? formatarData(r.dataChegada) : ""};${r.horaChegada};${r.tempo};${r.fasa};${r.motorista};${r.veiculo};${r.kmInicial};${r.kmFinal};${r.kmRodado};${r.combustivel || ""};${r.atividade}\n`;
   });
 
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
@@ -433,6 +452,20 @@ function alternarCadastros(){
   }
 }
 
+
+async function atualizarAutomaticamenteAoEntrar(){
+  if(navigator.onLine && supabaseClient){
+    try{
+      atualizarStatusOnline("Atualizando dados do banco automaticamente...");
+      await sincronizarTudo();
+      atualizarStatusOnline("Dados atualizados automaticamente: " + new Date().toLocaleString("pt-BR"));
+    }catch(e){
+      console.error(e);
+      atualizarStatusOnline("Não foi possível atualizar automaticamente. Use o botão Sincronizar.", "aviso");
+    }
+  }
+}
+
 async function iniciarApp(){
   carregarCache();
   document.getElementById("dataSaida").value = dataAtual();
@@ -447,7 +480,7 @@ async function iniciarApp(){
   await carregarUsuario();
 
   if(navigator.onLine && supabaseClient){
-    await sincronizarTudo();
+    await atualizarAutomaticamenteAoEntrar();
   }else{
     verificarConexao();
   }
@@ -456,5 +489,15 @@ async function iniciarApp(){
     navigator.serviceWorker.register("service-worker.js");
   }
 }
+
+document.addEventListener("visibilitychange", () => {
+  if(!document.hidden){
+    atualizarAutomaticamenteAoEntrar();
+  }
+});
+
+window.addEventListener("focus", () => {
+  atualizarAutomaticamenteAoEntrar();
+});
 
 iniciarApp();
