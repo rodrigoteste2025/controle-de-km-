@@ -17,7 +17,7 @@
 <body>
 <header>
   <h1>Controle de Quilometragem de Veículos</h1>
-  <p>Banco principal no Supabase • Relatório por veículo • Funciona offline</p>
+  <p>Banco principal no Supabase • Adaptado para celular • Funciona offline</p>
 </header>
 
 <main class="container">
@@ -28,21 +28,11 @@
     <b>Funcionamento:</b> quando houver internet, o app baixa e envia dados para o Supabase. Sem internet, salva no celular e sincroniza depois.
   </section>
 
-  <section class="card topo-login">
-    <div>
-      <h2>Usuário</h2>
-      <p id="usuarioLogado">Sem login</p>
-    </div>
-    <div class="botoes direita">
-      <button class="btn-exportar" onclick="abrirLogin()">Entrar</button>
-      <button class="btn-limpar" onclick="sair()">Sair</button>
-    </div>
-  </section>
-
   <section class="card resumo">
     <div><strong id="totalRegistros">0</strong>Registros</div>
     <div><strong id="viagensAbertas">0</strong>Em aberto</div>
     <div><strong id="totalKm">0</strong>Km rodados</div>
+    <div><strong id="totalCombustivel">0.00</strong>Litros</div>
   </section>
 
   <section class="card">
@@ -199,6 +189,7 @@
             <th>Km Inicial</th>
             <th>Km Final</th>
             <th>Km Rodado</th>
+            <th>Litros</th>
             <th>Atividade</th>
             <th>Ação</th>
           </tr>
@@ -241,29 +232,16 @@
         <input type="text" id="fecharFasa" placeholder="Informe o FASA">
       </div>
 
+      <div class="full">
+        <label>Litros Abastecidos</label>
+        <input type="number" id="fecharCombustivel" step="0.01" placeholder="Informe os litros, se abasteceu">
+      </div>
+
     </div>
 
     <div class="modal-botoes">
       <button class="btn-limpar" onclick="fecharModal()">Cancelar</button>
       <button class="btn-salvar" onclick="salvarFechamento()">Salvar Fechamento</button>
-    </div>
-  </div>
-</div>
-
-<div id="modalLogin" class="modal-fundo">
-  <div class="modal">
-    <h2>Login</h2>
-    <p class="texto-suave">Use o e-mail e senha cadastrados no Supabase Authentication. O app também pode funcionar sem login se suas políticas permitirem.</p>
-
-    <label>E-mail</label>
-    <input type="email" id="loginEmail" placeholder="email@exemplo.com">
-
-    <label>Senha</label>
-    <input type="password" id="loginSenha" placeholder="Senha">
-
-    <div class="modal-botoes">
-      <button class="btn-limpar" onclick="fecharLogin()">Cancelar</button>
-      <button class="btn-salvar" onclick="entrar()">Entrar</button>
     </div>
   </div>
 </div>
