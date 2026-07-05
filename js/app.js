@@ -45,6 +45,10 @@ function carregarCadastros(){
   const selectVeiculo = document.getElementById("veiculo");
   const filtroVeiculo = document.getElementById("filtroVeiculo");
 
+  const motoristaSelecionado = selectMotorista.value;
+  const veiculoSelecionado = selectVeiculo.value;
+  const filtroVeiculoSelecionado = filtroVeiculo.value;
+
   selectMotorista.innerHTML = '<option value="">Selecione</option>';
   selectVeiculo.innerHTML = '<option value="">Selecione</option>';
   filtroVeiculo.innerHTML = '<option value="">Todos os veículos</option>';
@@ -57,6 +61,10 @@ function carregarCadastros(){
     selectVeiculo.innerHTML += `<option value="${v.nome}">${v.nome}</option>`;
     filtroVeiculo.innerHTML += `<option value="${v.nome}">${v.nome}</option>`;
   });
+
+  selectMotorista.value = motoristaSelecionado;
+  selectVeiculo.value = veiculoSelecionado;
+  filtroVeiculo.value = filtroVeiculoSelecionado;
 
   const listaMotoristas = document.getElementById("listaMotoristas");
   const listaVeiculos = document.getElementById("listaVeiculos");
@@ -155,8 +163,6 @@ document.getElementById("formKm").addEventListener("submit", async function(e){
     kmInicial: Number(document.getElementById("kmInicial").value),
     kmFinal: "",
     kmRodado: "",
-    combustivel: "",
-    tipoCombustivel: document.getElementById("tipoCombustivel").value,
     atividade: normalizar(document.getElementById("atividade").value),
     usuario_email: usuarioAtual?.email || "",
     ativo: true
@@ -228,8 +234,6 @@ function renderizar(){
       <td data-label="Km Inicial">${item.kmInicial || "-"}</td>
       <td data-label="Km Final">${item.kmFinal || "-"}</td>
       <td data-label="Km Rodado">${item.kmRodado || "-"}</td>
-      <td data-label="Litros">${item.combustivel || "-"}</td>
-      <td data-label="Tipo">${item.tipoCombustivel || "-"}</td>
       <td data-label="Atividade">${item.atividade || "-"}</td>
       <td data-label="Ação">
         ${item.status === "ABERTO" ? `<button class="btn-fechar" onclick="fecharViagem('${item.local_id}')">Fechar</button>` : ""}
@@ -246,7 +250,6 @@ function atualizarResumo(lista){
   document.getElementById("totalRegistros").innerText = lista.length;
   document.getElementById("viagensAbertas").innerText = lista.filter(r => r.status === "ABERTO").length;
   document.getElementById("totalKm").innerText = lista.reduce((s,r) => s + Number(r.kmRodado || 0), 0);
-  document.getElementById("totalCombustivel").innerText = lista.reduce((s,r) => s + Number(r.combustivel || 0), 0).toFixed(2);
 }
 
 function fecharViagem(id){
@@ -260,7 +263,6 @@ function fecharViagem(id){
   document.getElementById("fecharHoraChegada").value = horaAtual();
   document.getElementById("fecharKmFinal").value = item.kmFinal || "";
   document.getElementById("fecharFasa").value = item.fasa || "";
-  document.getElementById("fecharCombustivel").value = item.combustivel || "";
 
   document.getElementById("infoFechamento").innerHTML = `
     <b>Motorista:</b> ${item.motorista}<br>
@@ -301,7 +303,6 @@ async function salvarFechamento(){
   const dataChegada = document.getElementById("fecharDataChegada").value;
   const horaChegada = document.getElementById("fecharHoraChegada").value;
   const fasa = normalizar(document.getElementById("fecharFasa").value);
-  const combustivel = Number(document.getElementById("fecharCombustivel").value || 0);
 
   if(!dataChegada) return alert("Informe a data de chegada.");
   if(!horaChegada) return alert("Informe o horário de chegada.");
@@ -320,7 +321,6 @@ async function salvarFechamento(){
   item.horaChegada = horaChegada;
   item.tempo = tempo;
   item.fasa = fasa;
-  item.combustivel = combustivel;
   item.status = "FECHADO";
   item.usuario_email = usuarioAtual?.email || item.usuario_email || "";
   marcarPendente(item);
@@ -367,7 +367,6 @@ function gerarPDF(){
   if(lista.length === 0) return alert("Não há registros para gerar relatório.");
 
   const totalKm = lista.reduce((s,r) => s + Number(r.kmRodado || 0), 0);
-  const totalComb = lista.reduce((s,r) => s + Number(r.combustivel || 0), 0);
 
   const doc = new jsPDF("landscape","mm","a4");
   doc.setFontSize(14);
@@ -378,11 +377,10 @@ function gerarPDF(){
   doc.text(`Data de emissão: ${formatarData(dataAtual())}`, 14, 31);
   doc.text(`Total de registros: ${lista.length}`, 14, 37);
   doc.text(`Total KM: ${totalKm}`, 75, 37);
-  doc.text(`Total Litros: ${totalComb.toFixed(2)}`, 125, 37);
 
   doc.autoTable({
     startY: 45,
-    head: [["Status","Saída","Chegada","Tempo","FASA","Motorista","Veículo","Km Inicial","Km Final","Km Rodado","Litros","Tipo","Atividade"]],
+    head: [["Status","Saída","Chegada","Tempo","FASA","Motorista","Veículo","Km Inicial","Km Final","Km Rodado","Atividade"]],
     body: lista.map(r => [
       r.status,
       `${formatarData(r.dataSaida)} ${r.horaSaida || ""}`,
@@ -394,13 +392,11 @@ function gerarPDF(){
       r.kmInicial || "-",
       r.kmFinal || "-",
       r.kmRodado || "-",
-      r.combustivel || "-",
-      r.tipoCombustivel || "-",
       r.atividade || "-"
     ]),
     styles:{fontSize:7,cellPadding:2,overflow:"linebreak"},
     headStyles:{fillColor:[22,101,52],textColor:255},
-    columnStyles:{12:{cellWidth:50}}
+    columnStyles:{10:{cellWidth:65}}
   });
 
   doc.save(`relatorio_quilometragem_${nomeMes(mes)}_${ano || "todos"}.pdf`);
@@ -410,9 +406,9 @@ function exportarCSV(){
   const lista = obterRegistrosFiltrados();
   if(lista.length === 0) return alert("Não há registros para exportar.");
 
-  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Litros;Tipo;Atividade\n";
+  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Atividade\n";
   lista.forEach(r => {
-    csv += `${r.status};${formatarData(r.dataSaida)};${r.horaSaida};${r.dataChegada ? formatarData(r.dataChegada) : ""};${r.horaChegada};${r.tempo};${r.fasa};${r.motorista};${r.veiculo};${r.kmInicial};${r.kmFinal};${r.kmRodado};${r.combustivel};${r.tipoCombustivel};${r.atividade}\n`;
+    csv += `${r.status};${formatarData(r.dataSaida)};${r.horaSaida};${r.dataChegada ? formatarData(r.dataChegada) : ""};${r.horaChegada};${r.tempo};${r.fasa};${r.motorista};${r.veiculo};${r.kmInicial};${r.kmFinal};${r.kmRodado};${r.atividade}\n`;
   });
 
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
@@ -420,6 +416,21 @@ function exportarCSV(){
   link.href = URL.createObjectURL(blob);
   link.download = "controle_quilometragem.csv";
   link.click();
+}
+
+function alternarCadastros(){
+  const conteudo = document.getElementById("conteudoCadastros");
+  const seta = document.getElementById("setaCadastros");
+
+  if(conteudo.classList.contains("fechado")){
+    conteudo.classList.remove("fechado");
+    conteudo.classList.add("aberto");
+    seta.innerText = "▼";
+  }else{
+    conteudo.classList.remove("aberto");
+    conteudo.classList.add("fechado");
+    seta.innerText = "▶";
+  }
 }
 
 async function iniciarApp(){

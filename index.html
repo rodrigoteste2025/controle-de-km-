@@ -17,7 +17,7 @@
 <body>
 <header>
   <h1>Controle de Quilometragem de Veículos</h1>
-  <p>Banco principal no Supabase • Funciona offline • Instala como app</p>
+  <p>Banco principal no Supabase • Relatório por veículo • Funciona offline</p>
 </header>
 
 <main class="container">
@@ -43,7 +43,6 @@
     <div><strong id="totalRegistros">0</strong>Registros</div>
     <div><strong id="viagensAbertas">0</strong>Em aberto</div>
     <div><strong id="totalKm">0</strong>Km rodados</div>
-    <div><strong id="totalCombustivel">0.00</strong>Litros</div>
   </section>
 
   <section class="card">
@@ -57,9 +56,13 @@
   </section>
 
   <section class="card cadastros">
-    <h2>Cadastro de Motoristas e Veículos</h2>
+    <button type="button" class="titulo-recolhivel" onclick="alternarCadastros()">
+      <span id="setaCadastros">▶</span>
+      <span>Cadastro de Motoristas e Veículos</span>
+    </button>
 
-    <div class="form-grid">
+    <div id="conteudoCadastros" class="conteudo-recolhivel fechado">
+      <div class="form-grid">
       <div>
         <label>Novo Motorista</label>
         <input type="text" id="novoMotorista" placeholder="Nome do motorista">
@@ -78,6 +81,7 @@
 
     <h3>Veículos cadastrados</h3>
     <div id="listaVeiculos" class="lista-cadastro"></div>
+    </div>
   </section>
 
   <section class="card card-form">
@@ -112,18 +116,6 @@
         <div>
           <label>Km Inicial</label>
           <input type="number" id="kmInicial" required placeholder="Km na saída">
-        </div>
-
-        <div>
-          <label>Tipo de Combustível</label>
-          <select id="tipoCombustivel">
-            <option value="">Selecione</option>
-            <option>Gasolina</option>
-            <option>Etanol</option>
-            <option>Diesel</option>
-            <option>Diesel S10</option>
-            <option>Flex</option>
-          </select>
         </div>
 
         <div class="full">
@@ -207,8 +199,6 @@
             <th>Km Inicial</th>
             <th>Km Final</th>
             <th>Km Rodado</th>
-            <th>Litros</th>
-            <th>Tipo</th>
             <th>Atividade</th>
             <th>Ação</th>
           </tr>
@@ -251,10 +241,6 @@
         <input type="text" id="fecharFasa" placeholder="Informe o FASA">
       </div>
 
-      <div class="full">
-        <label>Litros Abastecidos</label>
-        <input type="number" id="fecharCombustivel" step="0.01" placeholder="Informe os litros se abasteceu">
-      </div>
     </div>
 
     <div class="modal-botoes">

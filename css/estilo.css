@@ -85,3 +85,23 @@ tr:nth-child(even){background:#f9fafb}
   body{background:white}
   .card{box-shadow:none}
 }
+
+.titulo-recolhivel{
+  width:100%;
+  background:#ecfdf5;
+  color:#166534;
+  border:1px solid #bbf7d0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:flex-start;
+  font-size:18px;
+  border-radius:10px;
+  margin-bottom:12px;
+}
+.conteudo-recolhivel.fechado{
+  display:none;
+}
+.conteudo-recolhivel.aberto{
+  display:block;
+}
