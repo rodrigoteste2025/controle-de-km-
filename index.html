@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Quilometragem</title>
+<meta name="theme-color" content="#166534">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- PDF online: precisa de internet para carregar -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5f3;color:#1f2937}
+header{background:linear-gradient(135deg,#166534,#22c55e);color:white;padding:18px;text-align:center}
+header h1{margin:0;font-size:22px}
+header p{margin:6px 0 0;font-size:14px}
+.container{max-width:1180px;margin:auto;padding:15px}
+.card{background:white;padding:15px;border-radius:12px;box-shadow:0 3px 10px rgba(0,0,0,.08);margin-bottom:15px}
+h2{margin-top:0;color:#166534}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+label{font-weight:bold;font-size:14px}
+input,textarea,select{width:100%;padding:12px;margin-top:5px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px;background:white}
+textarea{resize:vertical;min-height:70px}
+.full{grid-column:1/-1}
+.botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+button{border:none;border-radius:8px;padding:12px 16px;font-weight:bold;cursor:pointer;font-size:15px;min-height:44px}
+.btn-salvar{background:#16a34a;color:white}
+.btn-limpar{background:#64748b;color:white}
+.btn-excluir{background:#dc2626;color:white}
+.btn-exportar{background:#2563eb;color:white}
+.btn-imprimir{background:#9333ea;color:white}
+.btn-fechar{background:#f97316;color:white}
+.status{padding:10px;border-radius:8px;background:#ecfdf5;color:#166534;font-weight:bold;margin-bottom:12px;display:none}
+.tabela-area{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1220px}
+th{background:#166534;color:white}
+th,td{padding:9px;border:1px solid #d1d5db;font-size:13px;text-align:left;vertical-align:top}
+tr:nth-child(even){background:#f9fafb}
+.badge-aberto{background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:20px;font-weight:bold}
+.badge-fechado{background:#dcfce7;color:#166534;padding:4px 8px;border-radius:20px;font-weight:bold}
+.resumo{display:flex;gap:10px;flex-wrap:wrap}
+.resumo div{background:#ecfdf5;padding:12px;border-radius:10px;flex:1;min-width:140px;text-align:center}
+.resumo strong{display:block;font-size:22px;color:#166534}
+.lista-cadastro{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+.item-cadastro{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:20px;padding:7px 10px;font-size:13px}
+.item-cadastro button{padding:3px 7px;margin-left:6px;font-size:11px}
+.aviso{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:10px;border-radius:8px;font-size:14px}
+
+.modal-fundo{position:fixed;inset:0;background:rgba(15,23,42,.65);display:none;align-items:center;justify-content:center;z-index:9999;padding:15px}
+.modal{background:white;width:100%;max-width:520px;border-radius:16px;padding:18px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+.modal h2{margin-top:0;color:#166534}
+.modal-info{background:#f0fdf4;border:1px solid #bbf7d0;padding:10px;border-radius:10px;margin-bottom:12px;font-size:14px}
+.modal-botoes{display:flex;gap:10px;margin-top:14px}
+.modal-botoes button{flex:1}
+
+@media(max-width:700px){
+  body{background:#eef7f0}
+  .container{padding:10px}
+  .card{padding:12px;border-radius:14px}
+  .form-grid{grid-template-columns:1fr!important}
+  header{padding:15px 10px}
+  header h1{font-size:19px}
+  header p{font-size:13px}
+  h2{font-size:18px}
+  h3{font-size:16px}
+
+  input,textarea,select{
+    font-size:16px;
+    min-height:46px;
+  }
+
+  textarea{
+    min-height:90px;
+  }
+
+  button{
+    width:100%;
+    font-size:15px;
+    min-height:46px;
+  }
+
+  .botoes{
+    flex-direction:column;
+  }
+
+  .resumo{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .resumo div{
+    min-width:0;
+    padding:10px 6px;
+  }
+
+  .resumo strong{
+    font-size:20px;
+  }
+
+  .lista-cadastro{
+    display:block;
+  }
+
+  .item-cadastro{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+    border-radius:12px;
+    padding:10px;
+  }
+
+  .item-cadastro button{
+    width:auto;
+    min-height:34px;
+    padding:5px 10px;
+  }
+
+  .tabela-area{
+    overflow:visible;
+  }
+
+  table{
+    min-width:0;
+    border:0;
+  }
+
+  thead{
+    display:none;
+  }
+
+  tbody,tr,td{
+    display:block;
+    width:100%;
+  }
+
+  tr{
+    background:white!important;
+    margin-bottom:14px;
+    border:1px solid #bbf7d0;
+    border-radius:14px;
+    padding:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,.08);
+  }
+
+  td{
+    border:none;
+    border-bottom:1px solid #e5e7eb;
+    padding:9px 4px;
+    font-size:14px;
+  }
+
+  td:last-child{
+    border-bottom:none;
+  }
+
+  td::before{
+    content:attr(data-label);
+    display:block;
+    font-weight:bold;
+    color:#166534;
+    margin-bottom:3px;
+    font-size:12px;
+    text-transform:uppercase;
+  }
+
+  td button{
+    margin-top:6px;
+  }
+
+  .modal{
+    max-width:100%;
+    max-height:92vh;
+    overflow:auto;
+    border-radius:14px;
+    padding:14px;
+  }
+
+  .modal-botoes{
+    flex-direction:column;
+  }
+}
+
+@media print{
+  .card-form,.cadastros,.botoes,.filtros{display:none}
+  body{background:white}
+  .card{box-shadow:none}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Controle de Quilometragem de Veículos</h1>
+  <p>Saída, retorno, km rodado, combustível no fechamento, motorista e atividade</p>
+</header>
+
+<div class="container">
+
+<div id="status" class="status"></div>
+
+<div class="card aviso">
+  <b>Atenção:</b> o app funciona offline no celular. Os dados ficam salvos no aparelho e podem ser enviados ao Supabase pelo botão <b>Sincronizar Dados</b> quando houver internet.
+</div>
+
+<div class="card resumo">
+  <div><strong id="totalRegistros">0</strong>Registros</div>
+  <div><strong id="viagensAbertas">0</strong>Em aberto</div>
+  <div><strong id="totalKm">0</strong>Km rodados</div>
+  <div><strong id="totalCombustivel">0</strong>Litros</div>
+</div>
+
+
+<div class="card">
+  <h2>Sincronização Online</h2>
+  <p style="color:#64748b;font-size:14px;margin-top:-6px">
+    Preencha a URL e a chave anon public do Supabase dentro do código, nas constantes SUPABASE_URL e SUPABASE_ANON_KEY.
+  </p>
+
+  <div class="botoes">
+    <button class="btn-exportar" onclick="sincronizarSupabase()">Sincronizar Dados</button>
+    <button class="btn-limpar" onclick="verificarStatusOnline()">Verificar Conexão</button>
+  </div>
+
+  <p id="statusOnline" style="font-weight:bold;color:#166534;margin-bottom:0"></p>
+</div>
+
+<div class="card cadastros">
+  <h2>Cadastro de Motoristas e Veículos</h2>
+  <div class="form-grid">
+    <div>
+      <label>Novo Motorista</label>
+      <input type="text" id="novoMotorista" placeholder="Nome do motorista">
+      <button class="btn-salvar" onclick="cadastrarMotorista()">Cadastrar Motorista</button>
+    </div>
+    <div>
+      <label>Novo Veículo</label>
+      <input type="text" id="novoVeiculo" placeholder="Ex: STRADA ABC1D23">
+      <button class="btn-salvar" onclick="cadastrarVeiculo()">Cadastrar Veículo</button>
+    </div>
+  </div>
+  <h3>Motoristas cadastrados</h3>
+  <div id="listaMotoristas" class="lista-cadastro"></div>
+  <h3>Veículos cadastrados</h3>
+  <div id="listaVeiculos" class="lista-cadastro"></div>
+</div>
+
+<div class="card card-form">
+  <h2>Registrar Saída do Veículo</h2>
+  <form id="formKm">
+    <div class="form-grid">
+      <div>
+        <label>Data da Saída</label>
+        <input type="date" id="dataSaida" required>
+      </div>
+      <div>
+        <label>Horário de Saída</label>
+        <input type="time" id="horaSaida" required>
+      </div>
+      <div>
+        <label>Motorista</label>
+        <select id="motorista" required><option value="">Selecione</option></select>
+      </div>
+      <div>
+        <label>Veículo</label>
+        <select id="veiculo" required><option value="">Selecione</option></select>
+      </div>
+      <div>
+        <label>Km Inicial</label>
+        <input type="number" id="kmInicial" required placeholder="Km na saída">
+      </div>
+      <div>
+        <label>Tipo de Combustível</label>
+        <select id="tipoCombustivel">
+          <option value="">Selecione</option>
+          <option>Gasolina</option>
+          <option>Etanol</option>
+          <option>Diesel</option>
+          <option>Diesel S10</option>
+          <option>Flex</option>
+        </select>
+      </div>
+      <div class="full">
+        <label>Atividade</label>
+        <textarea id="atividade" required placeholder="Descreva a atividade realizada"></textarea>
+      </div>
+    </div>
+    <div class="botoes">
+      <button type="submit" class="btn-salvar">Salvar Saída</button>
+      <button type="button" class="btn-limpar" onclick="limparFormulario()">Limpar</button>
+    </div>
+  </form>
+</div>
+
+<div class="card filtros">
+  <h2>Filtros e Relatório Mensal</h2>
+  <div class="form-grid">
+    <div>
+      <label>Pesquisar</label>
+      <input type="text" id="pesquisa" placeholder="Motorista, veículo, atividade ou data" oninput="listarRegistros()">
+    </div>
+    <div>
+      <label>Mês</label>
+      <select id="filtroMes" onchange="listarRegistros()">
+        <option value="">Todos</option>
+        <option value="01">Janeiro</option>
+        <option value="02">Fevereiro</option>
+        <option value="03">Março</option>
+        <option value="04">Abril</option>
+        <option value="05">Maio</option>
+        <option value="06">Junho</option>
+        <option value="07">Julho</option>
+        <option value="08">Agosto</option>
+        <option value="09">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
+    </div>
+    <div>
+      <label>Ano</label>
+      <input type="number" id="filtroAno" placeholder="Ex: 2026" onchange="listarRegistros()">
+    </div>
+
+    <div>
+      <label>Veículo para Relatório</label>
+      <select id="filtroVeiculo" onchange="listarRegistros()">
+        <option value="">Todos os veículos</option>
+      </select>
+    </div>
+  </div>
+  <div class="botoes">
+    <button class="btn-limpar" onclick="limparFiltros()">Limpar Filtros</button>
+    <button class="btn-exportar" onclick="gerarPDFMensal()">Gerar PDF do Mês</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Histórico de Quilometragem</h2>
+  <p style="margin-top:-8px;color:#64748b;font-size:14px">No celular, cada viagem aparece em formato de cartão para facilitar a leitura.</p>
+  <div class="botoes">
+    <button class="btn-exportar" onclick="exportarCSV()">Exportar CSV</button>
+    <button class="btn-imprimir" onclick="window.print()">Imprimir</button>
+    <button class="btn-excluir" onclick="apagarTudo()">Apagar Tudo</button>
+  </div>
+  <br>
+  <div class="tabela-area">
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Data Saída</th>
+          <th>Hora Saída</th>
+          <th>Data Chegada</th>
+          <th>Hora Chegada</th>
+          <th>Tempo</th>
+          <th>FASA</th>
+          <th>Motorista</th>
+          <th>Veículo</th>
+          <th>Km Inicial</th>
+          <th>Km Final</th>
+          <th>Km Rodado</th>
+          <th>Combustível</th>
+          <th>Tipo</th>
+          <th>Atividade</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaRegistros"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<div id="modalFechamento" class="modal-fundo">
+  <div class="modal">
+    <h2>Fechar Viagem</h2>
+    <div id="infoFechamento" class="modal-info"></div>
+    <input type="hidden" id="fecharId">
+
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <div>
+        <label>Data de Chegada</label>
+        <input type="date" id="fecharDataChegada">
+      </div>
+      <div>
+        <label>Horário de Chegada</label>
+        <input type="time" id="fecharHoraChegada">
+      </div>
+      <div>
+        <label>Km Final</label>
+        <input type="number" id="fecharKmFinal" placeholder="Informe o km final">
+      </div>
+      <div>
+        <label>Tempo</label>
+        <input type="text" id="fecharTempo" readonly>
+      </div>
+
+      <div style="grid-column:1/-1;">
+        <label>FASA</label>
+        <input type="text" id="fecharFasa" placeholder="Informe o FASA">
+      </div>
+
+      <div style="grid-column:1/-1;">
+        <label>Litros Abastecidos</label>
+        <input type="number" id="fecharCombustivel" step="0.01" placeholder="Informe os litros, se houver abastecimento">
+      </div>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-limpar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarFechamento()">Salvar Fechamento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let registros = JSON.parse(localStorage.getItem("controle_quilometragem")) || [];
+let motoristas = JSON.parse(localStorage.getItem("motoristas_quilometragem")) || [];
+let veiculos = JSON.parse(localStorage.getItem("veiculos_quilometragem")) || [];
+
+/*
+  CONFIGURAÇÃO DO SUPABASE
+  1) Crie o projeto no Supabase.
+  2) Crie as tabelas usando o arquivo supabase_tabelas.sql.
+  3) Cole abaixo a URL e a chave anon public.
+*/
+const SUPABASE_URL = "https://ocxyxgjauhrmtenbsvhf.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeHl4Z2phdWhybXRlbmJzdmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMDg4ODYsImV4cCI6MjA5ODc4NDg4Nn0.n1hW9qwmFdeqywxZVEz9XbJb-h1C0ztKTgCJioS_71Y";
+const USAR_SUPABASE = true;
+
+let supabaseClient = null;
+if (USAR_SUPABASE && SUPABASE_URL.includes("supabase.co") && SUPABASE_ANON_KEY.length > 20 && window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const form = document.getElementById("formKm");
+let viagemFechamentoAtual = null;
+
+document.getElementById("dataSaida").valueAsDate = new Date();
+document.getElementById("horaSaida").value = horaAtual();
+document.getElementById("filtroAno").value = new Date().getFullYear();
+
+form.addEventListener("submit", function(e){
+  e.preventDefault();
+
+  const registro = {
+    id: Date.now(),
+    sincronizado: false,
+    status: "ABERTO",
+    dataSaida: document.getElementById("dataSaida").value,
+    horaSaida: document.getElementById("horaSaida").value,
+    dataChegada: "",
+    horaChegada: "",
+    tempo: "",
+    fasa: "",
+    motorista: document.getElementById("motorista").value,
+    veiculo: document.getElementById("veiculo").value,
+    kmInicial: Number(document.getElementById("kmInicial").value),
+    kmFinal: "",
+    kmRodado: "",
+    combustivel: "",
+    tipoCombustivel: document.getElementById("tipoCombustivel").value,
+    atividade: document.getElementById("atividade").value.trim().toUpperCase()
+  };
+
+  registros.push(registro);
+  salvarTudo();
+  limparFormulario();
+  listarRegistros();
+  mostrarStatus("Saída registrada com sucesso.");
+});
+
+function cadastrarMotorista(){
+  const nome = document.getElementById("novoMotorista").value.trim().toUpperCase();
+  if(!nome) return mostrarStatus("Informe o nome do motorista.", "erro");
+  if(motoristas.includes(nome)) return mostrarStatus("Motorista já cadastrado.", "erro");
+  motoristas.push(nome);
+  document.getElementById("novoMotorista").value = "";
+  salvarTudo();
+  carregarCadastros();
+  mostrarStatus("Motorista cadastrado com sucesso.");
+}
+
+function cadastrarVeiculo(){
+  const nome = document.getElementById("novoVeiculo").value.trim().toUpperCase();
+  if(!nome) return mostrarStatus("Informe o veículo.", "erro");
+  if(veiculos.includes(nome)) return mostrarStatus("Veículo já cadastrado.", "erro");
+  veiculos.push(nome);
+  document.getElementById("novoVeiculo").value = "";
+  salvarTudo();
+  carregarCadastros();
+  mostrarStatus("Veículo cadastrado com sucesso.");
+}
+
+function carregarCadastros(){
+  const selectMotorista = document.getElementById("motorista");
+  const selectVeiculo = document.getElementById("veiculo");
+  const filtroVeiculo = document.getElementById("filtroVeiculo");
+
+  selectMotorista.innerHTML = '<option value="">Selecione</option>';
+  selectVeiculo.innerHTML = '<option value="">Selecione</option>';
+  filtroVeiculo.innerHTML = '<option value="">Todos os veículos</option>';
+
+  motoristas.forEach(nome => selectMotorista.innerHTML += `<option value="${nome}">${nome}</option>`);
+  veiculos.forEach(nome => {
+    selectVeiculo.innerHTML += `<option value="${nome}">${nome}</option>`;
+    filtroVeiculo.innerHTML += `<option value="${nome}">${nome}</option>`;
+  });
+
+  const listaMotoristas = document.getElementById("listaMotoristas");
+  const listaVeiculos = document.getElementById("listaVeiculos");
+  listaMotoristas.innerHTML = "";
+  listaVeiculos.innerHTML = "";
+
+  motoristas.forEach((nome, index) => {
+    listaMotoristas.innerHTML += `<span class="item-cadastro">${nome}<button class="btn-excluir" onclick="excluirMotorista(${index})">X</button></span>`;
+  });
+
+  veiculos.forEach((nome, index) => {
+    listaVeiculos.innerHTML += `<span class="item-cadastro">${nome}<button class="btn-excluir" onclick="excluirVeiculo(${index})">X</button></span>`;
+  });
+}
+
+function excluirMotorista(index){
+  if(!confirm("Deseja excluir este motorista?")) return;
+  motoristas.splice(index,1);
+  salvarTudo();
+  carregarCadastros();
+}
+
+function excluirVeiculo(index){
+  if(!confirm("Deseja excluir este veículo?")) return;
+  veiculos.splice(index,1);
+  salvarTudo();
+  carregarCadastros();
+}
+
+function obterRegistrosFiltrados(){
+  const pesquisa = document.getElementById("pesquisa").value.toLowerCase();
+  const mes = document.getElementById("filtroMes").value;
+  const ano = document.getElementById("filtroAno").value;
+  const veiculoFiltro = document.getElementById("filtroVeiculo").value;
+
+  return registros.filter(item => {
+    const data = item.dataSaida || "";
+    const anoItem = data.substring(0,4);
+    const mesItem = data.substring(5,7);
+
+    const passaPesquisa =
+      (item.motorista || "").toLowerCase().includes(pesquisa) ||
+      (item.veiculo || "").toLowerCase().includes(pesquisa) ||
+      (item.atividade || "").toLowerCase().includes(pesquisa) ||
+      (item.dataSaida || "").includes(pesquisa);
+
+    const passaMes = mes === "" || mesItem === mes;
+    const passaAno = ano === "" || anoItem === ano;
+    const passaVeiculo = veiculoFiltro === "" || item.veiculo === veiculoFiltro;
+
+    return passaPesquisa && passaMes && passaAno && passaVeiculo;
+  }).sort((a,b) => b.id - a.id);
+}
+
+function listarRegistros(){
+  const tbody = document.getElementById("tabelaRegistros");
+  tbody.innerHTML = "";
+
+  const filtrados = obterRegistrosFiltrados();
+
+  filtrados.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td data-label="Status">${item.status === "ABERTO" ? '<span class="badge-aberto">ABERTO</span>' : '<span class="badge-fechado">FECHADO</span>'}</td>
+      <td data-label="Data Saída">${formatarData(item.dataSaida)}</td>
+      <td data-label="Hora Saída">${item.horaSaida}</td>
+      <td data-label="Data Chegada">${item.dataChegada ? formatarData(item.dataChegada) : "-"}</td>
+      <td data-label="Hora Chegada">${item.horaChegada || "-"}</td>
+      <td data-label="Tempo">${item.tempo || "-"}</td>
+      <td data-label="FASA">${item.fasa || "-"}</td>
+      <td data-label="Motorista">${item.motorista}</td>
+      <td data-label="Veículo">${item.veiculo}</td>
+      <td data-label="Km Inicial">${item.kmInicial}</td>
+      <td data-label="Km Final">${item.kmFinal || "-"}</td>
+      <td data-label="Km Rodado">${item.kmRodado || "-"}</td>
+      <td data-label="Combustível">${item.combustivel || "-"}</td>
+      <td data-label="Tipo">${item.tipoCombustivel || "-"}</td>
+      <td data-label="Atividade">${item.atividade}</td>
+      <td data-label="Ação">
+        ${item.status === "ABERTO" ? `<button class="btn-fechar" onclick="fecharViagem(${item.id})">Fechar</button>` : ""}
+        <button class="btn-excluir" onclick="excluirRegistro(${item.id})">Excluir</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  atualizarResumo(filtrados);
+}
+
+function fecharViagem(id){
+  const item = registros.find(r => r.id === id);
+  if(!item) return;
+
+  viagemFechamentoAtual = item;
+
+  document.getElementById("fecharId").value = id;
+  document.getElementById("fecharDataChegada").value = dataAtual();
+  document.getElementById("fecharHoraChegada").value = horaAtual();
+  document.getElementById("fecharKmFinal").value = "";
+  document.getElementById("fecharTempo").value = "";
+  document.getElementById("fecharFasa").value = item.fasa || "";
+  document.getElementById("fecharCombustivel").value = item.combustivel || "";
+
+  document.getElementById("infoFechamento").innerHTML = `
+    <b>Motorista:</b> ${item.motorista}<br>
+    <b>Veículo:</b> ${item.veiculo}<br>
+    <b>Saída:</b> ${formatarData(item.dataSaida)} às ${item.horaSaida}<br>
+    <b>Km inicial:</b> ${item.kmInicial}
+  `;
+
+  document.getElementById("modalFechamento").style.display = "flex";
+  document.getElementById("fecharKmFinal").focus();
+
+  atualizarTempoModal();
+}
+
+function atualizarTempoModal(){
+  if(!viagemFechamentoAtual) return;
+
+  const dataChegada = document.getElementById("fecharDataChegada").value;
+  const horaChegada = document.getElementById("fecharHoraChegada").value;
+
+  if(dataChegada && horaChegada){
+    document.getElementById("fecharTempo").value = calcularTempo(
+      viagemFechamentoAtual.dataSaida,
+      viagemFechamentoAtual.horaSaida,
+      dataChegada,
+      horaChegada
+    );
+  }
+}
+
+function fecharModal(){
+  document.getElementById("modalFechamento").style.display = "none";
+  viagemFechamentoAtual = null;
+}
+
+function salvarFechamento(){
+  const id = Number(document.getElementById("fecharId").value);
+  const item = registros.find(r => r.id === id);
+  if(!item) return;
+
+  const kmFinalNumero = Number(document.getElementById("fecharKmFinal").value);
+  const dataChegada = document.getElementById("fecharDataChegada").value;
+  const horaChegada = document.getElementById("fecharHoraChegada").value;
+  const fasa = document.getElementById("fecharFasa").value.trim().toUpperCase();
+  const combustivelFechamento = Number(document.getElementById("fecharCombustivel").value || 0);
+
+  if(!dataChegada) return alert("Informe a data de chegada.");
+  if(!horaChegada) return alert("Informe o horário de chegada.");
+
+  if(!kmFinalNumero || kmFinalNumero < item.kmInicial){
+    alert("Km final inválido. Ele não pode ser menor que o Km inicial.");
+    return;
+  }
+
+  const tempo = calcularTempo(item.dataSaida, item.horaSaida, dataChegada, horaChegada);
+  if(tempo === "Horário inválido"){
+    alert("A data ou horário de chegada não pode ser menor que a saída.");
+    return;
+  }
+
+  item.kmFinal = kmFinalNumero;
+  item.kmRodado = kmFinalNumero - item.kmInicial;
+  item.dataChegada = dataChegada;
+  item.horaChegada = horaChegada;
+  item.tempo = tempo;
+  item.fasa = fasa;
+  item.combustivel = combustivelFechamento;
+  item.status = "FECHADO";
+  item.sincronizado = false;
+
+  salvarTudo();
+  listarRegistros();
+  fecharModal();
+  mostrarStatus("Viagem fechada com sucesso.");
+}
+
+function excluirRegistro(id){
+  if(!confirm("Deseja excluir este registro?")) return;
+  registros = registros.filter(item => item.id !== id);
+  salvarTudo();
+  listarRegistros();
+  mostrarStatus("Registro excluído.");
+}
+
+function apagarTudo(){
+  if(!confirm("Deseja apagar todos os registros de quilometragem?")) return;
+  registros = [];
+  salvarTudo();
+  listarRegistros();
+  mostrarStatus("Todos os registros foram apagados.");
+}
+
+function limparFormulario(){
+  form.reset();
+  document.getElementById("dataSaida").valueAsDate = new Date();
+  document.getElementById("horaSaida").value = horaAtual();
+}
+
+function limparFiltros(){
+  document.getElementById("pesquisa").value = "";
+  document.getElementById("filtroMes").value = "";
+  document.getElementById("filtroAno").value = new Date().getFullYear();
+  document.getElementById("filtroVeiculo").value = "";
+  listarRegistros();
+}
+
+function salvarTudo(){
+  localStorage.setItem("controle_quilometragem", JSON.stringify(registros));
+  localStorage.setItem("motoristas_quilometragem", JSON.stringify(motoristas));
+  localStorage.setItem("veiculos_quilometragem", JSON.stringify(veiculos));
+}
+
+function atualizarResumo(lista){
+  document.getElementById("totalRegistros").innerText = lista.length;
+  document.getElementById("viagensAbertas").innerText = lista.filter(r => r.status === "ABERTO").length;
+  document.getElementById("totalKm").innerText = lista.reduce((soma,item) => soma + Number(item.kmRodado || 0),0);
+  document.getElementById("totalCombustivel").innerText = lista.reduce((soma,item) => soma + Number(item.combustivel || 0),0).toFixed(2);
+}
+
+function formatarData(data){
+  if(!data) return "";
+  const p = data.split("-");
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
+
+function dataAtual(){
+  return new Date().toISOString().split("T")[0];
+}
+
+function horaAtual(){
+  const agora = new Date();
+  return String(agora.getHours()).padStart(2,"0") + ":" + String(agora.getMinutes()).padStart(2,"0");
+}
+
+function calcularTempo(dataSaida,horaSaida,dataChegada,horaChegada){
+  const inicio = new Date(`${dataSaida}T${horaSaida}`);
+  const fim = new Date(`${dataChegada}T${horaChegada}`);
+  let diff = fim - inicio;
+  if(diff < 0) return "Horário inválido";
+  const minutos = Math.floor(diff / 60000);
+  const horas = Math.floor(minutos / 60);
+  const min = minutos % 60;
+  return `${horas}h ${min}min`;
+}
+
+function nomeMes(numero){
+  const meses = {
+    "01":"JANEIRO","02":"FEVEREIRO","03":"MARÇO","04":"ABRIL",
+    "05":"MAIO","06":"JUNHO","07":"JULHO","08":"AGOSTO",
+    "09":"SETEMBRO","10":"OUTUBRO","11":"NOVEMBRO","12":"DEZEMBRO"
+  };
+  return meses[numero] || "TODOS OS MESES";
+}
+
+function gerarPDFMensal(){
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("A biblioteca do PDF não carregou. Conecte à internet e atualize a página. Depois clique novamente em Gerar PDF.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+
+  const mes = document.getElementById("filtroMes").value;
+  const ano = document.getElementById("filtroAno").value;
+  const veiculoRelatorio = document.getElementById("filtroVeiculo").value;
+
+  if(!mes){
+    alert("Selecione um mês para gerar o relatório em PDF.");
+    return;
+  }
+
+  if(!ano){
+    alert("Informe o ano para gerar o relatório em PDF.");
+    return;
+  }
+
+  const lista = obterRegistrosFiltrados();
+
+  if(lista.length === 0){
+    alert("Não há registros para o mês selecionado.");
+    return;
+  }
+
+  const totalKm = lista.reduce((soma,item) => soma + Number(item.kmRodado || 0),0);
+  const totalCombustivel = lista.reduce((soma,item) => soma + Number(item.combustivel || 0),0);
+  const abertas = lista.filter(item => item.status === "ABERTO").length;
+  const fechadas = lista.filter(item => item.status === "FECHADO").length;
+
+  const doc = new jsPDF("landscape", "mm", "a4");
+
+  doc.setFontSize(14);
+  doc.text("RELATÓRIO MENSAL DE CONTROLE DE QUILOMETRAGEM", 148, 15, {align:"center"});
+
+  doc.setFontSize(10);
+  doc.text(`Mês: ${nomeMes(mes)} / ${ano}`, 14, 25);
+  doc.text(`Veículo: ${veiculoRelatorio || "TODOS OS VEÍCULOS"}`, 120, 25);
+  doc.text(`Data de emissão: ${formatarData(dataAtual())}`, 14, 31);
+  doc.text(`Total de registros: ${lista.length}`, 14, 37);
+  doc.text(`Viagens fechadas: ${fechadas}`, 70, 37);
+  doc.text(`Viagens em aberto: ${abertas}`, 125, 37);
+  doc.text(`Total de KM rodado: ${totalKm}`, 185, 37);
+  doc.text(`Total de combustível: ${totalCombustivel.toFixed(2)} L`, 14, 43);
+
+  const corpo = lista.map(item => [
+    item.status,
+    formatarData(item.dataSaida),
+    item.horaSaida,
+    item.dataChegada ? formatarData(item.dataChegada) : "-",
+    item.horaChegada || "-",
+    item.tempo || "-",
+    item.fasa || "-",
+    item.motorista,
+    item.veiculo,
+    item.kmInicial,
+    item.kmFinal || "-",
+    item.kmRodado || "-",
+    item.combustivel || "-",
+    item.tipoCombustivel || "-",
+    item.atividade
+  ]);
+
+  doc.autoTable({
+    startY: 50,
+    head: [[
+      "Status","Data Saída","Hora Saída","Data Chegada","Hora Chegada",
+      "Tempo","FASA","Motorista","Veículo","Km Inicial","Km Final",
+      "Km Rodado","Comb.","Tipo","Atividade"
+    ]],
+    body: corpo,
+    styles: {fontSize: 7, cellPadding: 2, overflow: "linebreak"},
+    headStyles: {fillColor: [22,101,52], textColor: 255},
+    columnStyles: {14: {cellWidth: 45}}
+  });
+
+  const paginas = doc.internal.getNumberOfPages();
+  for(let i = 1; i <= paginas; i++){
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(`Página ${i} de ${paginas}`, 280, 200, {align:"right"});
+  }
+
+  const nomeArquivoVeiculo = veiculoRelatorio ? veiculoRelatorio.replace(/[^a-zA-Z0-9]/g, "_") : "TODOS_VEICULOS";
+  doc.save(`relatorio_quilometragem_${nomeMes(mes)}_${ano}_${nomeArquivoVeiculo}.pdf`);
+}
+
+
+function verificarStatusOnline(){
+  const texto = document.getElementById("statusOnline");
+
+  if(!navigator.onLine){
+    texto.style.color = "#dc2626";
+    texto.innerText = "Sem internet no momento. Os dados continuam salvos offline.";
+    return false;
+  }
+
+  if(!USAR_SUPABASE){
+    texto.style.color = "#92400e";
+    texto.innerText = "Internet ativa, mas o Supabase ainda não foi configurado no código.";
+    return false;
+  }
+
+  if(!supabaseClient){
+    texto.style.color = "#dc2626";
+    texto.innerText = "Supabase não carregou. Confira URL, chave e conexão.";
+    return false;
+  }
+
+  texto.style.color = "#166534";
+  texto.innerText = "Internet ativa e Supabase configurado.";
+  return true;
+}
+
+async function sincronizarSupabase(){
+  if(!verificarStatusOnline()) return;
+
+  try{
+    mostrarStatus("Sincronizando dados com Supabase...");
+
+    for(const nome of motoristas){
+      await supabaseClient
+        .from("motoristas")
+        .upsert({ nome: nome }, { onConflict: "nome" });
+    }
+
+    for(const nome of veiculos){
+      await supabaseClient
+        .from("veiculos")
+        .upsert({ nome: nome }, { onConflict: "nome" });
+    }
+
+    for(const item of registros){
+      const payload = {
+        local_id: String(item.id),
+        status: item.status || "ABERTO",
+        data_saida: item.dataSaida || null,
+        hora_saida: item.horaSaida || null,
+        data_chegada: item.dataChegada || null,
+        hora_chegada: item.horaChegada || null,
+        tempo: item.tempo || null,
+        fasa: item.fasa || null,
+        motorista: item.motorista || null,
+        veiculo: item.veiculo || null,
+        km_inicial: item.kmInicial || null,
+        km_final: item.kmFinal || null,
+        km_rodado: item.kmRodado || null,
+        combustivel: item.combustivel || null,
+        tipo_combustivel: item.tipoCombustivel || null,
+        atividade: item.atividade || null,
+        atualizado_em: new Date().toISOString()
+      };
+
+      const { error } = await supabaseClient
+        .from("quilometragem")
+        .upsert(payload, { onConflict: "local_id" });
+
+      if(error) throw error;
+
+      item.sincronizado = true;
+    }
+
+    salvarTudo();
+    listarRegistros();
+    mostrarStatus("Dados sincronizados com sucesso.");
+    document.getElementById("statusOnline").style.color = "#166534";
+    document.getElementById("statusOnline").innerText = "Última sincronização: " + new Date().toLocaleString("pt-BR");
+
+  }catch(erro){
+    console.error(erro);
+    alert("Erro ao sincronizar: " + erro.message);
+  }
+}
+
+window.addEventListener("online", () => {
+  const el = document.getElementById("statusOnline");
+  if(el) {
+    el.style.color = "#166534";
+    el.innerText = "Internet voltou. Você pode sincronizar os dados.";
+  }
+});
+
+window.addEventListener("offline", () => {
+  const el = document.getElementById("statusOnline");
+  if(el) {
+    el.style.color = "#dc2626";
+    el.innerText = "Sem internet. O app continua funcionando offline.";
+  }
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("Service Worker registrado"))
+      .catch(err => console.log("Erro no Service Worker", err));
+  });
+}
+
+
+function mostrarStatus(mensagem,tipo="ok"){
+  const status = document.getElementById("status");
+  status.style.display = "block";
+  status.innerText = mensagem;
+
+  if(tipo === "erro"){
+    status.style.background = "#fee2e2";
+    status.style.color = "#991b1b";
+  }else{
+    status.style.background = "#ecfdf5";
+    status.style.color = "#166534";
+  }
+
+  setTimeout(() => status.style.display = "none",3000);
+}
+
+function exportarCSV(){
+  const lista = obterRegistrosFiltrados();
+
+  if(lista.length === 0){
+    alert("Não há registros para exportar.");
+    return;
+  }
+
+  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Combustivel;Tipo;Atividade\n";
+
+  lista.forEach(item => {
+    csv += `${item.status};${formatarData(item.dataSaida)};${item.horaSaida};${item.dataChegada ? formatarData(item.dataChegada) : ""};${item.horaChegada};${item.tempo};${item.fasa || ""};${item.motorista};${item.veiculo};${item.kmInicial};${item.kmFinal};${item.kmRodado};${item.combustivel};${item.tipoCombustivel};${item.atividade}\n`;
+  });
+
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "controle_quilometragem.csv";
+  link.click();
+}
+
+document.getElementById("fecharDataChegada").addEventListener("change", atualizarTempoModal);
+document.getElementById("fecharHoraChegada").addEventListener("input", atualizarTempoModal);
+
+carregarCadastros();
+listarRegistros();
+</script>
+
+</body>
+</html>
