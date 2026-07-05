@@ -1,34 +1,28 @@
-# Controle de Quilometragem IDAF - PWA
+CONTROLE DE QUILOMETRAGEM V3
 
-Arquivos:
-- index.html
-- manifest.json
-- service-worker.js
-- supabase_tabelas.sql
-- pasta icons
+IMPORTANTE:
+Os arquivos devem ficar na raiz do GitHub Pages:
+index.html
+manifest.json
+service-worker.js
+css/
+js/
+icons/
+supabase_tabelas_v3.sql
 
-## Como usar como app no celular
+CONFIGURAR SUPABASE:
+1. Abra js/config.js.
+2. Coloque sua chave publishable:
+   const SUPABASE_ANON_KEY = "sb_publishable_...";
+3. Confirme:
+   const USAR_SUPABASE = true;
 
-1. Suba essa pasta no Netlify, GitHub Pages ou Vercel.
-2. Abra o link no celular.
-3. No Android/Chrome: toque nos três pontinhos e escolha "Adicionar à tela inicial".
-4. No iPhone/Safari: toque em Compartilhar e depois "Adicionar à Tela de Início".
+BANCO:
+1. Supabase > SQL Editor.
+2. Execute o arquivo supabase_tabelas_v3.sql.
 
-## Como configurar Supabase
+GITHUB PAGES:
+Settings > Pages > Deploy from branch > main > / root.
 
-1. Crie um projeto no Supabase.
-2. Vá em SQL Editor.
-3. Cole e execute o conteúdo do arquivo supabase_tabelas.sql.
-4. No Supabase, vá em Project Settings > API.
-5. Copie:
-   - Project URL
-   - anon public key
-6. Abra o index.html e altere:
-
-const SUPABASE_URL = "COLE_AQUI_A_URL_DO_SUPABASE";
-const SUPABASE_ANON_KEY = "COLE_AQUI_A_CHAVE_ANON_PUBLIC";
-const USAR_SUPABASE = true;
-
-7. Salve, suba novamente os arquivos e use o botão "Sincronizar Dados".
-
-Observação: o app funciona offline no celular usando LocalStorage. Quando houver internet, clique em "Sincronizar Dados".
+CELULAR:
+Abra o link do GitHub Pages no Chrome e toque em "Adicionar à tela inicial".
