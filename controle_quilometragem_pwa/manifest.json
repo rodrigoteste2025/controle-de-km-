@@ -1,0 +1,23 @@
+{
+  "name": "Controle de Quilometragem IDAF",
+  "short_name": "Quilometragem",
+  "description": "Controle de saída, retorno, km, combustível, motorista, veículo e FASA.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f1f5f3",
+  "theme_color": "#166534",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
