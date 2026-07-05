@@ -227,6 +227,7 @@ tr:nth-child(even){background:#f9fafb}
   <div class="botoes">
     <button class="btn-exportar" onclick="sincronizarSupabase()">Sincronizar Dados</button>
     <button class="btn-limpar" onclick="verificarStatusOnline()">Verificar Conexão</button>
+    <button class="btn-salvar" onclick="atualizarDadosDoBanco()">Atualizar do Banco</button>
   </div>
 
   <p id="statusOnline" style="font-weight:bold;color:#166534;margin-bottom:0"></p>
@@ -433,9 +434,9 @@ let veiculos = JSON.parse(localStorage.getItem("veiculos_quilometragem")) || [];
   2) Crie as tabelas usando o arquivo supabase_tabelas.sql.
   3) Cole abaixo a URL e a chave anon public.
 */
-const SUPABASE_URL = "https://ocxyxgjauhrmtenbsvhf.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeHl4Z2phdWhybXRlbmJzdmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMDg4ODYsImV4cCI6MjA5ODc4NDg4Nn0.n1hW9qwmFdeqywxZVEz9XbJb-h1C0ztKTgCJioS_71Y";
-const USAR_SUPABASE = true;
+const SUPABASE_URL = "COLE_AQUI_A_URL_DO_SUPABASE";
+const SUPABASE_ANON_KEY = "COLE_AQUI_A_CHAVE_ANON_PUBLIC";
+const USAR_SUPABASE = false;
 
 let supabaseClient = null;
 if (USAR_SUPABASE && SUPABASE_URL.includes("supabase.co") && SUPABASE_ANON_KEY.length > 20 && window.supabase) {
@@ -939,6 +940,7 @@ async function sincronizarSupabase(){
 
     salvarTudo();
     listarRegistros();
+    await atualizarDadosDoBanco(false);
     mostrarStatus("Dados sincronizados com sucesso.");
     document.getElementById("statusOnline").style.color = "#166534";
     document.getElementById("statusOnline").innerText = "Última sincronização: " + new Date().toLocaleString("pt-BR");
@@ -949,11 +951,114 @@ async function sincronizarSupabase(){
   }
 }
 
+
+async function atualizarDadosDoBanco(mostrarMensagem = true){
+  if(!verificarStatusOnline()) return;
+
+  try{
+    if(mostrarMensagem) mostrarStatus("Buscando dados do banco...");
+
+    const { data: motoristasBanco, error: erroMotoristas } = await supabaseClient
+      .from("motoristas")
+      .select("nome")
+      .order("nome", { ascending: true });
+
+    if(erroMotoristas) throw erroMotoristas;
+
+    const { data: veiculosBanco, error: erroVeiculos } = await supabaseClient
+      .from("veiculos")
+      .select("nome")
+      .order("nome", { ascending: true });
+
+    if(erroVeiculos) throw erroVeiculos;
+
+    const { data: quilometragemBanco, error: erroKm } = await supabaseClient
+      .from("quilometragem")
+      .select("*")
+      .order("atualizado_em", { ascending: false });
+
+    if(erroKm) throw erroKm;
+
+    motoristasBanco.forEach(m => {
+      if(m.nome && !motoristas.includes(m.nome)){
+        motoristas.push(m.nome);
+      }
+    });
+
+    veiculosBanco.forEach(v => {
+      if(v.nome && !veiculos.includes(v.nome)){
+        veiculos.push(v.nome);
+      }
+    });
+
+    quilometragemBanco.forEach(itemBanco => {
+      const localId = Number(itemBanco.local_id) || Date.now();
+
+      const itemConvertido = {
+        id: localId,
+        sincronizado: true,
+        status: itemBanco.status || "ABERTO",
+        dataSaida: itemBanco.data_saida || "",
+        horaSaida: itemBanco.hora_saida ? String(itemBanco.hora_saida).substring(0,5) : "",
+        dataChegada: itemBanco.data_chegada || "",
+        horaChegada: itemBanco.hora_chegada ? String(itemBanco.hora_chegada).substring(0,5) : "",
+        tempo: itemBanco.tempo || "",
+        fasa: itemBanco.fasa || "",
+        motorista: itemBanco.motorista || "",
+        veiculo: itemBanco.veiculo || "",
+        kmInicial: itemBanco.km_inicial || "",
+        kmFinal: itemBanco.km_final || "",
+        kmRodado: itemBanco.km_rodado || "",
+        combustivel: itemBanco.combustivel || "",
+        tipoCombustivel: itemBanco.tipo_combustivel || "",
+        atividade: itemBanco.atividade || ""
+      };
+
+      const indexLocal = registros.findIndex(r => String(r.id) === String(itemBanco.local_id));
+
+      if(indexLocal === -1){
+        registros.push(itemConvertido);
+      }else if(registros[indexLocal].sincronizado === true){
+        registros[indexLocal] = itemConvertido;
+      }
+    });
+
+    motoristas = [...new Set(motoristas)].sort();
+    veiculos = [...new Set(veiculos)].sort();
+
+    salvarTudo();
+    carregarCadastros();
+    listarRegistros();
+
+    if(mostrarMensagem){
+      mostrarStatus("Dados atualizados do banco com sucesso.");
+    }
+
+    const el = document.getElementById("statusOnline");
+    if(el){
+      el.style.color = "#166534";
+      el.innerText = "Dados atualizados do banco: " + new Date().toLocaleString("pt-BR");
+    }
+
+  }catch(erro){
+    console.error(erro);
+    alert("Erro ao atualizar dados do banco: " + erro.message);
+  }
+}
+
+async function iniciarCarregamentoOnline(){
+  if(navigator.onLine && USAR_SUPABASE && supabaseClient){
+    await atualizarDadosDoBanco(false);
+  }
+}
+
+
 window.addEventListener("online", () => {
   const el = document.getElementById("statusOnline");
   if(el) {
     el.style.color = "#166534";
-    el.innerText = "Internet voltou. Você pode sincronizar os dados.";
+    el.innerText = "Internet voltou. Atualizando dados do banco...";
+    atualizarDadosDoBanco(false);
   }
 });
 
@@ -1016,6 +1121,7 @@ document.getElementById("fecharHoraChegada").addEventListener("input", atualizar
 
 carregarCadastros();
 listarRegistros();
+iniciarCarregamentoOnline();
 </script>
 
 </body>
