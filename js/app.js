@@ -158,6 +158,7 @@ document.getElementById("formKm").addEventListener("submit", async function(e){
     horaChegada: "",
     tempo: "",
     fasa: "",
+    destino: "",
     motorista: document.getElementById("motorista").value,
     veiculo: document.getElementById("veiculo").value,
     kmInicial: Number(document.getElementById("kmInicial").value),
@@ -200,6 +201,7 @@ function obterRegistrosFiltrados(){
       item.veiculo,
       item.atividade,
       item.fasa,
+      item.destino,
       item.dataSaida
     ].join(" ").toLowerCase();
 
@@ -229,6 +231,7 @@ function criarLinhaRegistro(item){
     <td data-label="Hora Chegada">${item.horaChegada || "-"}</td>
     <td data-label="Tempo">${item.tempo || "-"}</td>
     <td data-label="FASA">${item.fasa || "-"}</td>
+    <td data-label="Destino">${item.destino || "-"}</td>
     <td data-label="Motorista">${item.motorista || "-"}</td>
     <td data-label="Veículo">${item.veiculo || "-"}</td>
     <td data-label="Km Inicial">${item.kmInicial || "-"}</td>
@@ -291,6 +294,7 @@ function fecharViagem(id){
   document.getElementById("fecharHoraChegada").value = horaAtual();
   document.getElementById("fecharKmFinal").value = item.kmFinal || "";
   document.getElementById("fecharFasa").value = item.fasa || "";
+  document.getElementById("fecharDestino").value = item.destino || "";
   document.getElementById("fecharCombustivel").value = item.combustivel || "";
 
   document.getElementById("infoFechamento").innerHTML = `
@@ -332,6 +336,7 @@ async function salvarFechamento(){
   const dataChegada = document.getElementById("fecharDataChegada").value;
   const horaChegada = document.getElementById("fecharHoraChegada").value;
   const fasa = normalizar(document.getElementById("fecharFasa").value);
+  const destino = normalizar(document.getElementById("fecharDestino").value);
   const combustivel = Number(document.getElementById("fecharCombustivel").value || 0);
 
   if(!dataChegada) return alert("Informe a data de chegada.");
@@ -351,6 +356,7 @@ async function salvarFechamento(){
   item.horaChegada = horaChegada;
   item.tempo = tempo;
   item.fasa = fasa;
+  item.destino = destino;
   item.combustivel = combustivel;
   item.status = "FECHADO";
   item.usuario_email = usuarioAtual?.email || item.usuario_email || "";
@@ -413,13 +419,14 @@ function gerarPDF(){
 
   doc.autoTable({
     startY: 45,
-    head: [["Status","Saída","Chegada","Tempo","FASA","Motorista","Veículo","Km Inicial","Km Final","Km Rodado","Litros","Atividade"]],
+    head: [["Status","Saída","Chegada","Tempo","FASA","Destino","Motorista","Veículo","Km Inicial","Km Final","Km Rodado","Litros","Atividade"]],
     body: lista.map(r => [
       r.status,
       `${formatarData(r.dataSaida)} ${r.horaSaida || ""}`,
       r.dataChegada ? `${formatarData(r.dataChegada)} ${r.horaChegada || ""}` : "-",
       r.tempo || "-",
       r.fasa || "-",
+      r.destino || "-",
       r.motorista || "-",
       r.veiculo || "-",
       r.kmInicial || "-",
@@ -430,7 +437,7 @@ function gerarPDF(){
     ]),
     styles:{fontSize:7,cellPadding:2,overflow:"linebreak"},
     headStyles:{fillColor:[22,101,52],textColor:255},
-    columnStyles:{11:{cellWidth:60}}
+    columnStyles:{12:{cellWidth:55}}
   });
 
   doc.save(`relatorio_quilometragem_${nomeMes(mes)}_${ano || "todos"}.pdf`);
@@ -440,9 +447,9 @@ function exportarCSV(){
   const lista = obterRegistrosFiltrados();
   if(lista.length === 0) return alert("Não há registros para exportar.");
 
-  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Litros;Atividade\n";
+  let csv = "Status;Data Saida;Hora Saida;Data Chegada;Hora Chegada;Tempo;FASA;Destino;Motorista;Veiculo;Km Inicial;Km Final;Km Rodado;Litros;Atividade\n";
   lista.forEach(r => {
-    csv += `${r.status};${formatarData(r.dataSaida)};${r.horaSaida};${r.dataChegada ? formatarData(r.dataChegada) : ""};${r.horaChegada};${r.tempo};${r.fasa};${r.motorista};${r.veiculo};${r.kmInicial};${r.kmFinal};${r.kmRodado};${r.combustivel || ""};${r.atividade}\n`;
+    csv += `${r.status};${formatarData(r.dataSaida)};${r.horaSaida};${r.dataChegada ? formatarData(r.dataChegada) : ""};${r.horaChegada};${r.tempo};${r.fasa};${r.destino || ""};${r.motorista};${r.veiculo};${r.kmInicial};${r.kmFinal};${r.kmRodado};${r.combustivel || ""};${r.atividade}\n`;
   });
 
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
