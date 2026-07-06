@@ -1,4 +1,4 @@
-const CACHE_NAME = "controle-km-v3-topo-sem-sync-3";
+const CACHE_NAME = "controle-km-v3-historico-separado-4";
 const ARQUIVOS = [
   "./",
   "./index.html",

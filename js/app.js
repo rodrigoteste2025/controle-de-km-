@@ -220,40 +220,55 @@ function obterRegistrosFiltrados(){
   });
 }
 
+function criarLinhaRegistro(item){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td data-label="Data Saída">${formatarData(item.dataSaida)}</td>
+    <td data-label="Hora Saída">${item.horaSaida || "-"}</td>
+    <td data-label="Data Chegada">${item.dataChegada ? formatarData(item.dataChegada) : "-"}</td>
+    <td data-label="Hora Chegada">${item.horaChegada || "-"}</td>
+    <td data-label="Tempo">${item.tempo || "-"}</td>
+    <td data-label="FASA">${item.fasa || "-"}</td>
+    <td data-label="Motorista">${item.motorista || "-"}</td>
+    <td data-label="Veículo">${item.veiculo || "-"}</td>
+    <td data-label="Km Inicial">${item.kmInicial || "-"}</td>
+    <td data-label="Km Final">${item.kmFinal || "-"}</td>
+    <td data-label="Km Rodado">${item.kmRodado || "-"}</td>
+    <td data-label="Litros">${item.combustivel || "-"}</td>
+    <td data-label="Atividade">${item.atividade || "-"}</td>
+    <td data-label="Ação">
+      ${item.status === "ABERTO" || !item.kmFinal || !item.dataChegada ? `<button class="btn-fechar" onclick="fecharViagem('${item.local_id}')">Fechar</button>` : ""}
+      <button class="btn-excluir" onclick="excluirRegistro('${item.local_id}')">Excluir</button>
+    </td>
+  `;
+  return tr;
+}
+
 function renderizar(){
   carregarCadastros();
 
   const lista = obterRegistrosFiltrados();
-  const tbody = document.getElementById("tabelaRegistros");
-  tbody.innerHTML = "";
+  const abertas = lista.filter(item => item.status === "ABERTO" || !item.kmFinal || !item.dataChegada);
+  const finalizadas = lista.filter(item => !(item.status === "ABERTO" || !item.kmFinal || !item.dataChegada));
 
-  lista.forEach(item => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td data-label="Status">
-        ${item.status === "ABERTO" ? '<span class="badge-aberto">ABERTO</span>' : '<span class="badge-fechado">FECHADO</span>'}
-        ${item.pendente ? '<span class="badge-pendente">Pendente de sincronização</span>' : ''}
-      </td>
-      <td data-label="Data Saída">${formatarData(item.dataSaida)}</td>
-      <td data-label="Hora Saída">${item.horaSaida || "-"}</td>
-      <td data-label="Data Chegada">${item.dataChegada ? formatarData(item.dataChegada) : "-"}</td>
-      <td data-label="Hora Chegada">${item.horaChegada || "-"}</td>
-      <td data-label="Tempo">${item.tempo || "-"}</td>
-      <td data-label="FASA">${item.fasa || "-"}</td>
-      <td data-label="Motorista">${item.motorista || "-"}</td>
-      <td data-label="Veículo">${item.veiculo || "-"}</td>
-      <td data-label="Km Inicial">${item.kmInicial || "-"}</td>
-      <td data-label="Km Final">${item.kmFinal || "-"}</td>
-      <td data-label="Km Rodado">${item.kmRodado || "-"}</td>
-      <td data-label="Litros">${item.combustivel || "-"}</td>
-      <td data-label="Atividade">${item.atividade || "-"}</td>
-      <td data-label="Ação">
-        ${item.status === "ABERTO" ? `<button class="btn-fechar" onclick="fecharViagem('${item.local_id}')">Fechar</button>` : ""}
-        <button class="btn-excluir" onclick="excluirRegistro('${item.local_id}')">Excluir</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+  const tabelaAbertas = document.getElementById("tabelaAbertas");
+  const tabelaFinalizadas = document.getElementById("tabelaFinalizadas");
+
+  if(tabelaAbertas){
+    tabelaAbertas.innerHTML = "";
+    abertas.forEach(item => tabelaAbertas.appendChild(criarLinhaRegistro(item)));
+  }
+
+  if(tabelaFinalizadas){
+    tabelaFinalizadas.innerHTML = "";
+    finalizadas.forEach(item => tabelaFinalizadas.appendChild(criarLinhaRegistro(item)));
+  }
+
+  const tituloAbertas = document.getElementById("tituloViagensAbertas");
+  const tituloFinalizadas = document.getElementById("tituloViagensFinalizadas");
+
+  if(tituloAbertas) tituloAbertas.innerText = `Viagens em Aberto (${abertas.length})`;
+  if(tituloFinalizadas) tituloFinalizadas.innerText = `Histórico de Viagens Finalizadas (${finalizadas.length})`;
 
   atualizarResumo(lista);
 }
@@ -464,6 +479,32 @@ async function atualizarAutomaticamenteAoEntrar(){
       atualizarStatusOnline("Não foi possível atualizar automaticamente. Use o botão Sincronizar.", "aviso");
     }
   }
+}
+
+
+function alternarBloco(idConteudo, idSeta){
+  const conteudo = document.getElementById(idConteudo);
+  const seta = document.getElementById(idSeta);
+
+  if(!conteudo || !seta) return;
+
+  if(conteudo.classList.contains("fechado")){
+    conteudo.classList.remove("fechado");
+    conteudo.classList.add("aberto");
+    seta.innerText = "▼";
+  }else{
+    conteudo.classList.remove("aberto");
+    conteudo.classList.add("fechado");
+    seta.innerText = "▶";
+  }
+}
+
+function alternarViagensAbertas(){
+  alternarBloco("conteudoViagensAbertas", "setaViagensAbertas");
+}
+
+function alternarViagensFinalizadas(){
+  alternarBloco("conteudoViagensFinalizadas", "setaViagensFinalizadas");
 }
 
 async function iniciarApp(){

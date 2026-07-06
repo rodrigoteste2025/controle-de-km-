@@ -125,3 +125,21 @@ tr:nth-child(even){background:#f9fafb}
   th:nth-child(13),td:nth-child(13){width:170px}
   th:nth-child(14),td:nth-child(14){width:90px}
 }
+
+.linha-aberta{
+  background:#f0fdf4!important;
+}
+#conteudoViagensAbertas.aberto,
+#conteudoViagensFinalizadas.aberto{
+  display:block;
+}
+#conteudoViagensAbertas.fechado,
+#conteudoViagensFinalizadas.fechado{
+  display:none;
+}
+#conteudoViagensAbertas table th{
+  background:#15803d;
+}
+#conteudoViagensFinalizadas table th{
+  background:#475569;
+}

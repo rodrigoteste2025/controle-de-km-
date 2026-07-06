@@ -162,34 +162,73 @@
   </section>
 
   <section class="card">
-    <h2>Histórico de Quilometragem</h2>
-    <p class="texto-suave">No celular, cada viagem aparece em formato de cartão.</p>
+    <button type="button" class="titulo-recolhivel" onclick="alternarViagensAbertas()">
+      <span id="setaViagensAbertas">▼</span>
+      <span id="tituloViagensAbertas">Viagens em Aberto (0)</span>
+    </button>
 
-    <div class="tabela-area">
-      <table>
-        <thead>
-          <tr>
-            <th>Status</th>
-            <th>Data Saída</th>
-            <th>Hora Saída</th>
-            <th>Data Chegada</th>
-            <th>Hora Chegada</th>
-            <th>Tempo</th>
-            <th>FASA</th>
-            <th>Motorista</th>
-            <th>Veículo</th>
-            <th>Km Inicial</th>
-            <th>Km Final</th>
-            <th>Km Rodado</th>
-            <th>Litros</th>
-            <th>Atividade</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaRegistros"></tbody>
-      </table>
+    <div id="conteudoViagensAbertas" class="conteudo-recolhivel aberto">
+      <p class="texto-suave">Viagens que ainda precisam ser fechadas.</p>
+      <div class="tabela-area">
+        <table>
+          <thead>
+            <tr>
+              <th>Data Saída</th>
+              <th>Hora Saída</th>
+              <th>Data Chegada</th>
+              <th>Hora Chegada</th>
+              <th>Tempo</th>
+              <th>FASA</th>
+              <th>Motorista</th>
+              <th>Veículo</th>
+              <th>Km Inicial</th>
+              <th>Km Final</th>
+              <th>Km Rodado</th>
+              <th>Litros</th>
+              <th>Atividade</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaAbertas"></tbody>
+        </table>
+      </div>
     </div>
   </section>
+
+  <section class="card">
+    <button type="button" class="titulo-recolhivel" onclick="alternarViagensFinalizadas()">
+      <span id="setaViagensFinalizadas">▶</span>
+      <span id="tituloViagensFinalizadas">Histórico de Viagens Finalizadas (0)</span>
+    </button>
+
+    <div id="conteudoViagensFinalizadas" class="conteudo-recolhivel fechado">
+      <p class="texto-suave">Viagens já encerradas. No celular, cada viagem aparece em formato de cartão.</p>
+      <div class="tabela-area">
+        <table>
+          <thead>
+            <tr>
+              <th>Data Saída</th>
+              <th>Hora Saída</th>
+              <th>Data Chegada</th>
+              <th>Hora Chegada</th>
+              <th>Tempo</th>
+              <th>FASA</th>
+              <th>Motorista</th>
+              <th>Veículo</th>
+              <th>Km Inicial</th>
+              <th>Km Final</th>
+              <th>Km Rodado</th>
+              <th>Litros</th>
+              <th>Atividade</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaFinalizadas"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <div id="modalFechamento" class="modal-fundo">
