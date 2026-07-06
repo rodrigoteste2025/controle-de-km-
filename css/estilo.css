@@ -143,3 +143,52 @@ tr:nth-child(even){background:#f9fafb}
 #conteudoViagensFinalizadas table th{
   background:#475569;
 }
+
+.sync-indicador{
+  padding:12px 15px;
+  border-left:6px solid #ca8a04;
+}
+.sync-linha{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.sync-linha span{
+  font-size:26px;
+}
+.sync-linha strong{
+  display:block;
+  font-size:16px;
+}
+.sync-linha p{
+  margin:3px 0 0;
+  color:#475569;
+  font-size:14px;
+}
+.sync-online{
+  border-left-color:#16a34a;
+  background:#ecfdf5;
+}
+.sync-offline{
+  border-left-color:#dc2626;
+  background:#fef2f2;
+}
+.sync-pendente{
+  border-left-color:#ca8a04;
+  background:#fffbeb;
+}
+.sync-enviando{
+  border-left-color:#2563eb;
+  background:#eff6ff;
+}
+@media(max-width:700px){
+  .sync-linha{
+    align-items:flex-start;
+  }
+  .sync-linha strong{
+    font-size:15px;
+  }
+  .sync-linha p{
+    font-size:13px;
+  }
+}

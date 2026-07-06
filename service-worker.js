@@ -1,4 +1,4 @@
-const CACHE_NAME = "controle-km-v3-destino-5";
+const CACHE_NAME = "controle-km-v3-aviso-sync-6";
 const ARQUIVOS = [
   "./",
   "./index.html",

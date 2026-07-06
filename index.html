@@ -29,6 +29,16 @@
     <b>Funcionamento:</b> quando houver internet, o app baixa e envia dados para o Supabase. Sem internet, salva no celular e sincroniza depois.
   </section>
 
+  <section id="indicadorSincronismo" class="card sync-indicador sync-pendente">
+    <div class="sync-linha">
+      <span id="syncIcone">🟡</span>
+      <div>
+        <strong id="syncTitulo">Verificando sincronização...</strong>
+        <p id="syncMensagem">Aguarde enquanto o aplicativo verifica a conexão.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="card resumo">
     <div><strong id="totalRegistros">0</strong>Registros</div>
     <div><strong id="viagensAbertas">0</strong>Em aberto</div>

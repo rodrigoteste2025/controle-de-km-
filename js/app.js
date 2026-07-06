@@ -525,6 +525,7 @@ async function iniciarApp(){
 
   renderizar();
   iniciarSupabase();
+  verificarConexao();
   await carregarUsuario();
 
   if(navigator.onLine && supabaseClient){
@@ -533,8 +534,12 @@ async function iniciarApp(){
     verificarConexao();
   }
 
-  if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("service-worker.js");
+  if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")){
+    try{
+      await navigator.serviceWorker.register("service-worker.js");
+    }catch(e){
+      console.warn("Service Worker não registrado:", e);
+    }
   }
 }
 

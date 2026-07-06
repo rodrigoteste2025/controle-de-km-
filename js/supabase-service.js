@@ -22,14 +22,44 @@ function iniciarSupabase(){
 
 function atualizarStatusOnline(msg, tipo="ok"){
   const el = document.getElementById("statusOnline");
-  if(!el) return;
-  el.style.color = tipo === "erro" ? "#991b1b" : tipo === "aviso" ? "#92400e" : "#166534";
-  el.innerText = msg;
+  if(el){
+    el.style.color = tipo === "erro" ? "#991b1b" : tipo === "aviso" ? "#92400e" : "#166534";
+    el.innerText = msg;
+  }
+}
+
+function atualizarIndicadorSincronismo(tipo, titulo, mensagem){
+  const box = document.getElementById("indicadorSincronismo");
+  const icone = document.getElementById("syncIcone");
+  const tituloEl = document.getElementById("syncTitulo");
+  const msgEl = document.getElementById("syncMensagem");
+
+  if(!box || !icone || !tituloEl || !msgEl) return;
+
+  box.classList.remove("sync-online", "sync-offline", "sync-pendente", "sync-enviando");
+
+  if(tipo === "online"){
+    box.classList.add("sync-online");
+    icone.innerText = "🟢";
+  }else if(tipo === "offline"){
+    box.classList.add("sync-offline");
+    icone.innerText = "🔴";
+  }else if(tipo === "enviando"){
+    box.classList.add("sync-enviando");
+    icone.innerText = "🔄";
+  }else{
+    box.classList.add("sync-pendente");
+    icone.innerText = "🟡";
+  }
+
+  tituloEl.innerText = titulo;
+  msgEl.innerText = mensagem;
 }
 
 function verificarConexao(){
   if(!navigator.onLine){
     atualizarStatusOnline("Sem internet. O app continua salvando no celular.", "erro");
+    atualizarIndicadorSincronismo("offline", "Offline", "Sem internet. Os dados serão salvos no aparelho e enviados quando a conexão voltar.");
     return false;
   }
   if(!supabaseClient){
@@ -37,9 +67,11 @@ function verificarConexao(){
   }
   if(!supabaseClient){
     atualizarStatusOnline("Supabase não configurado.", "erro");
+    atualizarIndicadorSincronismo("pendente", "Supabase não configurado", "Confira a URL e a chave publishable no arquivo js/config.js.");
     return false;
   }
   atualizarStatusOnline("Internet ativa e Supabase configurado.");
+  atualizarIndicadorSincronismo("online", "Online", "Conexão ativa. Os dados podem ser sincronizados com o banco.");
   return true;
 }
 
@@ -256,22 +288,27 @@ async function sincronizarTudo(){
   if(!verificarConexao()) return;
 
   try{
+    atualizarIndicadorSincronismo("enviando", "Sincronizando...", "Enviando dados pendentes e atualizando informações do banco.");
     mostrarStatus("Sincronizando...");
     await enviarPendentes();
     await baixarDoBanco(false);
     mostrarStatus("Sincronização concluída.");
     atualizarStatusOnline("Última sincronização: " + new Date().toLocaleString("pt-BR"));
+    atualizarIndicadorSincronismo("online", "Tudo sincronizado", "Última sincronização: " + new Date().toLocaleString("pt-BR"));
   }catch(e){
     console.error(e);
+    atualizarIndicadorSincronismo("pendente", "Sincronização pendente", "Não foi possível enviar agora. Os dados ficam salvos e serão sincronizados depois.");
     alert("Erro ao sincronizar: " + e.message);
   }
 }
 
 window.addEventListener("online", () => {
   atualizarStatusOnline("Internet voltou. Sincronizando...");
+  atualizarIndicadorSincronismo("enviando", "Internet voltou", "Sincronizando dados pendentes automaticamente.");
   sincronizarTudo();
 });
 
 window.addEventListener("offline", () => {
   atualizarStatusOnline("Sem internet. Os dados serão salvos no celular.", "erro");
+  atualizarIndicadorSincronismo("offline", "Offline", "Sem internet. Continue usando normalmente; os dados serão enviados quando a conexão voltar.");
 });
