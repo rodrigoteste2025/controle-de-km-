@@ -192,3 +192,34 @@ tr:nth-child(even){background:#f9fafb}
     font-size:13px;
   }
 }
+
+
+#btnAtivarNotificacoes{
+    background:linear-gradient(135deg,#166534,#22c55e) !important;
+    color:#fff !important;
+    border:0 !important;
+    border-radius:10px !important;
+    padding:11px 18px !important;
+    font-size:14px !important;
+    font-weight:bold !important;
+    box-shadow:0 3px 8px rgba(22,101,52,.20) !important;
+    width:auto !important;
+    min-width:190px !important;
+}
+
+#btnAtivarNotificacoes:hover{
+    background:linear-gradient(135deg,#14532d,#16a34a) !important;
+}
+
+#btnAtivarNotificacoes:active{
+    transform:scale(.98);
+}
+
+@media(max-width:700px){
+
+    #btnAtivarNotificacoes{
+        width:100% !important;
+        min-width:0 !important;
+    }
+
+}

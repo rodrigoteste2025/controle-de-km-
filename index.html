@@ -6,15 +6,38 @@
   <title>Controle de Quilometragem</title>
   <meta name="theme-color" content="#166534" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png.png" />
   <link rel="stylesheet" href="css/estilo.css" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+  <script type="module" src="js/firebase.js"></script>
 </head>
 
 <body>
+<div>
+    <strong>🔔 Notificações</strong>
+
+    <small id="statusNotificacoes">
+        Verificando...
+    </small>
+</div>
+
+<button
+    type="button"
+    id="btnAtivarNotificacoes"
+    class="btn-notificacao-ios"
+    onclick="ativarNotificacoesIOS()">
+
+    <span class="icone-notificacao">🔔</span>
+    <span>Ativar notificações</span>
+
+</button>
+
+</div>
+
 <header>
   <h1>Controle de Quilometragem de Veículos</h1>
   
@@ -302,5 +325,233 @@
 <script src="js/utils.js"></script>
 <script src="js/supabase-service.js"></script>
 <script src="js/app.js"></script>
+<script type="module" src="js/firebase.js"></script>
 </body>
+
+<script>
+
+async function ativarNotificacoesIOS() {
+
+    try {
+
+        console.log(
+            "Solicitando permissão para notificações..."
+        );
+
+        // -------------------------------------------------
+        // Verifica suporte
+        // -------------------------------------------------
+
+        if (!("Notification" in window)) {
+
+            alert(
+                "Este dispositivo/navegador não suporta notificações."
+            );
+
+            return;
+
+        }
+
+        // -------------------------------------------------
+        // Solicita permissão através de ação do usuário
+        // -------------------------------------------------
+
+        const permissao =
+            await Notification.requestPermission();
+
+        console.log(
+            "Permissão:",
+            permissao
+        );
+
+        const status =
+            document.getElementById(
+                "statusNotificacoes"
+            );
+
+        const botao =
+            document.getElementById(
+                "btnAtivarNotificacoes"
+            );
+
+        if (permissao === "granted") {
+
+            if (status) {
+
+                status.innerText =
+                    "Notificações ativadas.";
+
+            }
+
+            if (botao) {
+
+                botao.innerText =
+                    "✅ Notificações ativadas";
+
+                botao.disabled = true;
+
+            }
+
+            // -------------------------------------------------
+            // Tenta registrar o Firebase novamente
+            // -------------------------------------------------
+
+            if (
+                typeof registrarFirebase ===
+                "function"
+            ) {
+
+                await registrarFirebase();
+
+            }
+
+            alert(
+                "Notificações ativadas com sucesso!"
+            );
+
+        }
+
+        else if (
+            permissao === "denied"
+        ) {
+
+            if (status) {
+
+                status.innerText =
+                    "Notificações bloqueadas.";
+
+            }
+
+            alert(
+                "As notificações foram bloqueadas. " +
+                "Para ativá-las, permita notificações nas configurações do iPhone."
+            );
+
+        }
+
+        else {
+
+            if (status) {
+
+                status.innerText =
+                    "Permissão não concedida.";
+
+            }
+
+        }
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao ativar notificações:",
+            erro
+        );
+
+        alert(
+            "Não foi possível ativar as notificações."
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// ATUALIZA STATUS AO ABRIR O APP
+// =====================================================
+
+function atualizarStatusNotificacoes() {
+
+    const status =
+        document.getElementById(
+            "statusNotificacoes"
+        );
+
+    const botao =
+        document.getElementById(
+            "btnAtivarNotificacoes"
+        );
+
+
+    if (
+        !("Notification" in window)
+    ) {
+
+        if (status) {
+
+            status.innerText =
+                "Não suportado";
+
+        }
+
+        return;
+
+    }
+
+
+    if (
+        Notification.permission ===
+        "granted"
+    ) {
+
+        if (status) {
+
+            status.innerText =
+                "Notificações ativadas.";
+
+        }
+
+        if (botao) {
+
+            botao.innerText =
+                "✅ Notificações ativadas";
+
+            botao.disabled = true;
+
+        }
+
+    }
+
+    else if (
+        Notification.permission ===
+        "denied"
+    ) {
+
+        if (status) {
+
+            status.innerText =
+                "Notificações bloqueadas.";
+
+        }
+
+        if (botao) {
+
+            botao.innerText =
+                "⚠️ Notificações bloqueadas";
+
+        }
+
+    }
+
+    else {
+
+        if (status) {
+
+            status.innerText =
+                "Notificações ainda não ativadas.";
+
+        }
+
+    }
+
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    atualizarStatusNotificacoes
+);
+
+</script>
+
 </html>

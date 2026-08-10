@@ -12,9 +12,9 @@ function iniciarSupabase(){
     return;
   }
 
-  if(!SUPABASE_URL.includes("supabase.co") || SUPABASE_ANON_KEY.includes("COLE_AQUI")){
+  if(!SUPABASE_URL.includes("https://ocxyxgjauhrmtenbsvhf.supabase.co") || SUPABASE_ANON_KEY.includes("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jeHl4Z2phdWhybXRlbmJzdmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMDg4ODYsImV4cCI6MjA5ODc4NDg4Nn0.n1hW9qwmFdeqywxZVEz9XbJb-h1C0ztKTgCJioS_71Y")){
     atualizarStatusOnline("Configure a URL e a chave publishable no arquivo js/config.js.", "erro");
-    return;
+    true;
   }
 
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
