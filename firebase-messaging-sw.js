@@ -4,13 +4,19 @@
 // ==========================================
 
 
-// Firebase App
+// ==========================================
+// FIREBASE APP
+// ==========================================
+
 importScripts(
     "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"
 );
 
 
-// Firebase Messaging
+// ==========================================
+// FIREBASE MESSAGING
+// ==========================================
+
 importScripts(
     "https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"
 );
@@ -22,7 +28,8 @@ importScripts(
 
 firebase.initializeApp({
 
-    apiKey: "AIzaSyDpJqPqLfMA4yaBHMQEvRbK0dLYwGTp5c8",
+    apiKey:
+        "AIzaSyDpJqPqLfMA4yaBHMQEvRbK0dLYwGTp5c8",
 
     authDomain:
         "controle-de-quilometragem-idaf.firebaseapp.com",
@@ -46,7 +53,8 @@ firebase.initializeApp({
 // FIREBASE MESSAGING
 // ==========================================
 
-const messaging = firebase.messaging();
+const messaging =
+    firebase.messaging();
 
 
 // ==========================================
@@ -57,45 +65,79 @@ messaging.onBackgroundMessage(
     function(payload) {
 
         console.log(
-            "[firebase-messaging-sw.js] Notificação recebida:",
+            "[firebase-messaging-sw.js]",
+            "Mensagem recebida:",
             payload
         );
 
 
+        // ======================================
+        // PEGAR DADOS DA MENSAGEM
+        // ======================================
+
         const titulo =
-            payload?.notification?.title ||
+            payload?.data?.titulo ||
             "Controle de Quilometragem IDAF";
 
 
         const corpo =
-            payload?.notification?.body ||
+            payload?.data?.mensagem ||
             "Nova atualização no sistema";
 
 
+        console.log(
+            "Título:",
+            titulo
+        );
+
+
+        console.log(
+            "Mensagem:",
+            corpo
+        );
+
+
+        // ======================================
+        // OPÇÕES DA NOTIFICAÇÃO
+        // ======================================
+
         const opcoes = {
 
-            body: corpo,
+            body:
+                corpo,
 
-            icon: "/icons/icon-192.png",
+            icon:
+                "/icons/icon-192.png.png",
 
-            badge: "/icons/icon-192.png",
+            badge:
+                "/icons/icon-192.png.png",
 
-            tag: "controle-quilometragem-idaf",
+            tag:
+                "controle-quilometragem-idaf",
 
-            renotify: true,
+            renotify:
+                true,
 
             data: {
 
-                url: "/"
+                url:
+                    "/"
 
             }
 
         };
 
 
+        // ======================================
+        // MOSTRAR UMA ÚNICA NOTIFICAÇÃO
+        // ======================================
+
         return self.registration.showNotification(
+
             titulo,
+
             opcoes
+
         );
 
     }
@@ -107,8 +149,15 @@ messaging.onBackgroundMessage(
 // ==========================================
 
 self.addEventListener(
+
     "notificationclick",
+
     function(event) {
+
+        console.log(
+            "Notificação clicada."
+        );
+
 
         event.notification.close();
 
@@ -116,14 +165,21 @@ self.addEventListener(
         event.waitUntil(
 
             clients.matchAll({
-                type: "window",
-                includeUncontrolled: true
+
+                type:
+                    "window",
+
+                includeUncontrolled:
+                    true
+
             })
 
             .then(function(clientList) {
 
-                // Se o aplicativo já estiver aberto,
-                // coloca a janela em primeiro plano.
+
+                // =================================
+                // SE O APP JÁ ESTIVER ABERTO
+                // =================================
 
                 for (
                     const client of clientList
@@ -140,8 +196,9 @@ self.addEventListener(
                 }
 
 
-                // Caso não esteja aberto,
-                // abre o aplicativo.
+                // =================================
+                // SE O APP NÃO ESTIVER ABERTO
+                // =================================
 
                 if (
                     clients.openWindow
@@ -158,4 +215,5 @@ self.addEventListener(
         );
 
     }
+
 );
