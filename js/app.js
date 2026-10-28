@@ -1473,222 +1473,470 @@ function limparFiltros() {
 // PDF
 // =====================================================
 
+
+
 function gerarPDF() {
-
-    if (
-        !window.jspdf ||
-        !window.jspdf.jsPDF
-    ) {
-
-        alert(
-            "A biblioteca de PDF não carregou. Abra com internet e tente novamente."
-        );
-
-        return;
-
+  try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("A biblioteca de PDF não foi carregada.");
+      return;
     }
 
+    const { jsPDF } = window.jspdf;
 
-    const { jsPDF } =
-        window.jspdf;
-
-
-    const mes =
-        document.getElementById(
-            "filtroMes"
-        ).value;
-
-
-    const ano =
-        document.getElementById(
-            "filtroAno"
-        ).value;
-
-
-    const veiculo =
-        document.getElementById(
-            "filtroVeiculo"
-        ).value ||
-        "TODOS OS VEÍCULOS";
-
-
-    const lista =
-        obterRegistrosFiltrados();
-
-
-    if (lista.length === 0) {
-
-        return alert(
-            "Não há registros para gerar relatório."
-        );
-
-    }
-
-
-    const totalKm =
-        lista.reduce(
-            (s, r) =>
-                s +
-                Number(
-                    r.kmRodado || 0
-                ),
-            0
-        );
-
-
-    const totalComb =
-        lista.reduce(
-            (s, r) =>
-                s +
-                Number(
-                    r.combustivel || 0
-                ),
-            0
-        );
-
-
-    const doc =
-        new jsPDF(
-            "landscape",
-            "mm",
-            "a4"
-        );
-
-
-    doc.setFontSize(14);
-
-
-    doc.text(
-        "RELATÓRIO DE CONTROLE DE QUILOMETRAGEM",
-        148,
-        15,
-        {
-            align: "center"
-        }
-    );
-
-
-    doc.setFontSize(10);
-
-
-    doc.text(
-        `Mês: ${nomeMes(mes)} / ${ano || "TODOS"}`,
-        14,
-        25
-    );
-
-
-    doc.text(
-        `Veículo: ${veiculo}`,
-        105,
-        25
-    );
-
-
-    doc.text(
-        `Data de emissão: ${formatarData(dataAtual())}`,
-        14,
-        31
-    );
-
-
-    doc.text(
-        `Total de registros: ${lista.length}`,
-        14,
-        37
-    );
-
-
-    doc.text(
-        `Total KM: ${totalKm}`,
-        75,
-        37
-    );
-
-
-    doc.text(
-        `Total Litros: ${totalComb.toFixed(2)}`,
-        125,
-        37
-    );
-
-
-    doc.autoTable({
-
-        startY: 45,
-
-        head: [[
-            "Status",
-            "Saída",
-            "Chegada",
-            "Tempo",
-            "FASA",
-            "Destino",
-            "Motorista",
-            "Veículo",
-            "Km Inicial",
-            "Km Final",
-            "Km Rodado",
-            "Litros",
-            "Atividade"
-        ]],
-
-        body: lista.map(r => [
-
-            r.status,
-
-            `${formatarData(r.dataSaida)} ${r.horaSaida || ""}`,
-
-            r.dataChegada
-                ? `${formatarData(r.dataChegada)} ${r.horaChegada || ""}`
-                : "-",
-
-            r.tempo || "-",
-
-            r.fasa || "-",
-
-            r.destino || "-",
-
-            r.motorista || "-",
-
-            r.veiculo || "-",
-
-            r.kmInicial || "-",
-
-            r.kmFinal || "-",
-
-            r.kmRodado || "-",
-
-            r.combustivel || "-",
-
-            r.atividade || "-"
-
-        ]),
-
-        styles: {
-            fontSize: 7,
-            cellPadding: 2,
-            overflow: "linebreak"
-        },
-
-        headStyles: {
-            fillColor: [22, 101, 52],
-            textColor: 255
-        },
-
-        columnStyles: {
-            12: {
-                cellWidth: 55
-            }
-        }
-
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+      compress: true
     });
 
+    const registrosOriginais = obterRegistrosFiltrados();
 
-    doc.save(
-        `relatorio_quilometragem_${nomeMes(mes)}_${ano || "todos"}.pdf`
+    const registros = (registrosOriginais || []).filter(r => {
+      const status = String(r.status || "").toUpperCase();
+      return status !== "ABERTO" &&
+        r.kmFinal !== null &&
+        r.kmFinal !== undefined &&
+        r.kmFinal !== "";
+    });
+
+    if (!registros.length) {
+      alert("Não existem viagens finalizadas para gerar o PDF.");
+      return;
+    }
+
+    const numero = valor => {
+      if (valor === null || valor === undefined || valor === "") {
+        return 0;
+      }
+
+      if (typeof valor === "number") {
+        return Number.isFinite(valor) ? valor : 0;
+      }
+
+      const texto = String(valor).trim().replace(/\s/g, "");
+
+      if (texto.includes(",") && texto.includes(".")) {
+        return Number(texto.replace(/\./g, "").replace(",", ".")) || 0;
+      }
+
+      if (texto.includes(",")) {
+        return Number(texto.replace(",", ".")) || 0;
+      }
+
+      return Number(texto) || 0;
+    };
+
+    const texto = valor => {
+      if (valor === null || valor === undefined || valor === "") {
+        return "-";
+      }
+
+      return String(valor).trim() || "-";
+    };
+
+    // Quilometragem sem separador de milhar.
+    const kmTexto = valor => {
+      if (valor === null || valor === undefined || valor === "") {
+        return "-";
+      }
+
+      return String(Math.round(numero(valor)));
+    };
+
+    // Litros com até três casas decimais, usando vírgula.
+    // Exemplo: 37,125
+    const litrosTexto = valor => {
+      if (valor === null || valor === undefined || valor === "") {
+        return "0";
+      }
+
+      return numero(valor).toLocaleString("pt-BR", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3,
+        useGrouping: false
+      });
+    };
+
+    const dataTexto = valor => {
+      if (!valor) return "-";
+
+      if (/^\d{4}-\d{2}-\d{2}/.test(String(valor))) {
+        const partes = String(valor).slice(0, 10).split("-");
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+
+      return String(valor);
+    };
+
+    const horaTexto = valor => {
+      if (!valor) return "-";
+      return String(valor).slice(0, 5);
+    };
+
+    const obterDataSaida = r =>
+      r.dataSaida || r.data_saida || r.data || r.saidaData || "";
+
+    const obterHoraSaida = r =>
+      r.horaSaida || r.hora_saida || r.saida || "";
+
+    const obterDataChegada = r =>
+      r.dataChegada || r.data_chegada || r.chegadaData || "";
+
+    const obterHoraChegada = r =>
+      r.horaChegada || r.hora_chegada || r.chegada || "";
+
+    const obterMotorista = r =>
+      r.motorista || r.nomeMotorista || r.nome_motorista || "-";
+
+    const obterDestino = r =>
+      r.destino || r.localDestino || r.local_destino || "-";
+
+    const obterKmInicial = r =>
+      r.kmInicial ?? r.km_inicial ?? "";
+
+    const obterKmFinal = r =>
+      r.kmFinal ?? r.km_final ?? "";
+
+    const obterKmRodado = r => {
+      const informado = r.kmRodado ?? r.km_rodado;
+
+      if (informado !== null && informado !== undefined && informado !== "") {
+        return informado;
+      }
+
+      return numero(obterKmFinal(r)) - numero(obterKmInicial(r));
+    };
+
+    const obterLitros = r =>
+      r.combustivel ??
+      r.litros ??
+      r.quantidadeLitros ??
+      r.quantidade_litros ??
+      0;
+
+    const obterFasa = r => {
+      const valor =
+        r.fasa ??
+        r.FASA ??
+        r.numeroFasa ??
+        r.numero_fasa ??
+        "";
+
+      return valor === "" ? "-" : String(valor).replace(/\s+/g, "");
+    };
+
+    const obterAtividade = r =>
+      r.atividade || r.descricao || r.observacao || "-";
+
+    registros.sort((a, b) => {
+      return String(obterDataSaida(b)).localeCompare(
+        String(obterDataSaida(a))
+      );
+    });
+
+    const totalKm = registros.reduce(
+      (soma, r) => soma + Math.max(0, numero(obterKmRodado(r))),
+      0
     );
 
+    const totalComb = registros.reduce(
+      (soma, r) => soma + numero(obterLitros(r)),
+      0
+    );
+
+    const larguraPagina = doc.internal.pageSize.getWidth();
+    const alturaPagina = doc.internal.pageSize.getHeight();
+
+    const margemEsquerda = 5;
+    const margemDireita = 5;
+    const larguraUtil = larguraPagina - margemEsquerda - margemDireita;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(
+      "CONTROLE DE UTILIZAÇÃO DE VEÍCULOS OFICIAIS",
+      larguraPagina / 2,
+      8,
+      { align: "center" }
+    );
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(
+      `Viagens finalizadas: ${registros.length} | Total de km: ${kmTexto(totalKm)} | Total de litros: ${litrosTexto(totalComb)}`,
+      larguraPagina / 2,
+      13,
+      { align: "center" }
+    );
+
+    const cabecalho = [[
+      "Data saída",
+      "Saída",
+      "Data chegada",
+      "Chegada",
+      "Motorista",
+      "Destino",
+      "Km inicial",
+      "Km final",
+      "Km rodado",
+      "Litros",
+      "FASA",
+      "Atividade"
+    ]];
+
+    const corpo = registros.map(r => [
+      dataTexto(obterDataSaida(r)),
+      horaTexto(obterHoraSaida(r)),
+      dataTexto(obterDataChegada(r)),
+      horaTexto(obterHoraChegada(r)),
+      texto(obterMotorista(r)),
+      texto(obterDestino(r)),
+      kmTexto(obterKmInicial(r)),
+      kmTexto(obterKmFinal(r)),
+      kmTexto(obterKmRodado(r)),
+      litrosTexto(obterLitros(r)),
+      obterFasa(r),
+      texto(obterAtividade(r))
+    ]);
+
+    const largurasBase = [
+      18, 10, 18, 10, 31, 31,
+      17, 17, 17, 15, 22, 47
+    ];
+
+    const somaBase = largurasBase.reduce(
+      (soma, largura) => soma + largura,
+      0
+    );
+
+    const fator = larguraUtil / somaBase;
+    const larguras = largurasBase.map(largura => largura * fator);
+
+    const estilosColunas = {};
+
+    larguras.forEach((largura, indice) => {
+      estilosColunas[indice] = {
+        cellWidth: largura,
+        valign: "middle"
+      };
+    });
+
+    [0, 1, 2, 3, 6, 7, 8, 9, 10].forEach(indice => {
+      estilosColunas[indice].halign = "center";
+    });
+
+    [4, 5, 11].forEach(indice => {
+      estilosColunas[indice].halign = "left";
+      estilosColunas[indice].overflow = "linebreak";
+    });
+
+    doc.autoTable({
+      head: cabecalho,
+      body: corpo,
+      startY: 17,
+      margin: {
+        left: margemEsquerda,
+        right: margemDireita,
+        top: 8,
+        bottom: 13
+      },
+      tableWidth: larguraUtil,
+      theme: "grid",
+      showHead: "everyPage",
+      rowPageBreak: "avoid",
+      styles: {
+        font: "helvetica",
+        fontSize: 6.5,
+        cellPadding: {
+          top: 1.3,
+          right: 1,
+          bottom: 1.3,
+          left: 1
+        },
+        overflow: "linebreak",
+        valign: "middle",
+        lineWidth: 0.1,
+        lineColor: [210, 215, 210],
+        textColor: [45, 45, 45],
+        minCellHeight: 7
+      },
+      headStyles: {
+        fillColor: [22, 101, 52],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 6.5,
+        halign: "center",
+        valign: "middle",
+        cellPadding: 1.5
+      },
+      columnStyles: estilosColunas,
+      didParseCell: function (dados) {
+        if (dados.section !== "body") return;
+
+        // FASA: fonte menor para números mais compridos.
+        if (dados.column.index === 10) {
+          const conteudo = String(dados.cell.text.join(""));
+
+          if (conteudo.length > 15) {
+            dados.cell.styles.fontSize = 4.5;
+          } else if (conteudo.length > 11) {
+            dados.cell.styles.fontSize = 5;
+          } else if (conteudo.length > 8) {
+            dados.cell.styles.fontSize = 5.5;
+          }
+
+          dados.cell.styles.overflow = "hidden";
+          dados.cell.styles.halign = "center";
+        }
+
+        // Números ficam em uma única linha.
+        if ([1, 3, 6, 7, 8, 9].includes(dados.column.index)) {
+          dados.cell.styles.overflow = "hidden";
+          dados.cell.styles.halign = "center";
+        }
+
+        // Preserva os três decimais dos litros.
+        if (dados.column.index === 9) {
+          dados.cell.styles.fontSize = 6;
+          dados.cell.styles.overflow = "hidden";
+          dados.cell.styles.halign = "center";
+        }
+      }
+    });
+
+    let yAssinaturas = doc.lastAutoTable.finalY + 10;
+    const alturaNecessaria = 42;
+
+    if (yAssinaturas + alturaNecessaria > alturaPagina - 15) {
+      doc.addPage();
+      yAssinaturas = 20;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(
+      "CONTROLE DE RUBRICA DOS MOTORISTAS",
+      larguraPagina / 2,
+      yAssinaturas,
+      { align: "center" }
+    );
+
+    yAssinaturas += 5;
+
+    const motoristas = [
+      ...new Set(
+        registros
+          .map(r => String(obterMotorista(r)).trim())
+          .filter(nome => nome && nome !== "-")
+      )
+    ];
+
+    const larguraTabelaAssinaturas = Math.min(210, larguraUtil);
+    const margemCentralizada =
+      (larguraPagina - larguraTabelaAssinaturas) / 2;
+
+    const larguraNome = larguraTabelaAssinaturas * 0.5;
+    const larguraRubrica = larguraTabelaAssinaturas - larguraNome;
+
+    doc.autoTable({
+      startY: yAssinaturas,
+      margin: {
+        left: margemCentralizada,
+        right: margemCentralizada,
+        bottom: 15
+      },
+      tableWidth: larguraTabelaAssinaturas,
+      head: [[
+        "Nome do motorista",
+        "Rubrica / assinatura"
+      ]],
+      body: motoristas.map(nome => [nome, ""]),
+      theme: "grid",
+      styles: {
+        font: "helvetica",
+        fontSize: 8,
+        cellPadding: 3,
+        minCellHeight: 11,
+        valign: "middle",
+        lineWidth: 0.25,
+        lineColor: [130, 130, 130],
+        textColor: [45, 45, 45],
+        overflow: "linebreak"
+      },
+      headStyles: {
+        fillColor: [22, 101, 52],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "center",
+        valign: "middle",
+        minCellHeight: 11
+      },
+      columnStyles: {
+        0: {
+          cellWidth: larguraNome,
+          halign: "left"
+        },
+        1: {
+          cellWidth: larguraRubrica,
+          halign: "center",
+          minCellHeight: 12
+        }
+      }
+    });
+
+    const yDeclaracao = doc.lastAutoTable.finalY + 7;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+
+    if (yDeclaracao + 10 > alturaPagina - 12) {
+      doc.addPage();
+      doc.text(
+        "Declaro que as informações registradas correspondem às viagens realizadas.",
+        larguraPagina / 2,
+        20,
+        { align: "center", maxWidth: larguraUtil }
+      );
+    } else {
+      doc.text(
+        "Declaro que as informações registradas correspondem às viagens realizadas.",
+        larguraPagina / 2,
+        yDeclaracao,
+        { align: "center", maxWidth: larguraUtil }
+      );
+    }
+
+    const totalPaginas = doc.internal.getNumberOfPages();
+
+    for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+      doc.setPage(pagina);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(110, 110, 110);
+
+      doc.text(
+        "IDAF - Controle de utilização de veículos oficiais",
+        margemEsquerda,
+        alturaPagina - 5
+      );
+
+      doc.text(
+        `Página ${pagina} de ${totalPaginas}`,
+        larguraPagina - margemDireita,
+        alturaPagina - 5,
+        { align: "right" }
+      );
+    }
+
+    doc.save("controle-utilizacao-veiculos-IDAF.pdf");
+
+  } catch (erro) {
+    console.error("Erro ao gerar PDF:", erro);
+    alert("Não foi possível gerar o PDF. Verifique o console do navegador para mais detalhes.");
+  }
 }
 
 
