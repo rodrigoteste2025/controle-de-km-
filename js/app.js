@@ -1475,6 +1475,7 @@ function limparFiltros() {
 
 
 
+
 function gerarPDF() {
   try {
     if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -1495,6 +1496,7 @@ function gerarPDF() {
 
     const registros = (registrosOriginais || []).filter(r => {
       const status = String(r.status || "").toUpperCase();
+
       return status !== "ABERTO" &&
         r.kmFinal !== null &&
         r.kmFinal !== undefined &&
@@ -1515,17 +1517,19 @@ function gerarPDF() {
         return Number.isFinite(valor) ? valor : 0;
       }
 
-      const texto = String(valor).trim().replace(/\s/g, "");
+      const valorTexto = String(valor).trim().replace(/\s/g, "");
 
-      if (texto.includes(",") && texto.includes(".")) {
-        return Number(texto.replace(/\./g, "").replace(",", ".")) || 0;
+      if (valorTexto.includes(",") && valorTexto.includes(".")) {
+        return Number(
+          valorTexto.replace(/\./g, "").replace(",", ".")
+        ) || 0;
       }
 
-      if (texto.includes(",")) {
-        return Number(texto.replace(",", ".")) || 0;
+      if (valorTexto.includes(",")) {
+        return Number(valorTexto.replace(",", ".")) || 0;
       }
 
-      return Number(texto) || 0;
+      return Number(valorTexto) || 0;
     };
 
     const texto = valor => {
@@ -1536,7 +1540,6 @@ function gerarPDF() {
       return String(valor).trim() || "-";
     };
 
-    // Quilometragem sem separador de milhar.
     const kmTexto = valor => {
       if (valor === null || valor === undefined || valor === "") {
         return "-";
@@ -1545,8 +1548,7 @@ function gerarPDF() {
       return String(Math.round(numero(valor)));
     };
 
-    // Litros com até três casas decimais, usando vírgula.
-    // Exemplo: 37,125
+    // Litros com até três casas decimais, sem separador de milhar.
     const litrosTexto = valor => {
       if (valor === null || valor === undefined || valor === "") {
         return "0";
@@ -1630,11 +1632,84 @@ function gerarPDF() {
     const obterAtividade = r =>
       r.atividade || r.descricao || r.observacao || "-";
 
-    registros.sort((a, b) => {
-      return String(obterDataSaida(b)).localeCompare(
-        String(obterDataSaida(a))
-      );
-    });
+    // Identificação do veículo presente em cada registro.
+    const obterVeiculo = r => {
+      let veiculo =
+        r.veiculo ??
+        r.nomeVeiculo ??
+        r.nome_veiculo ??
+        r.veiculoNome ??
+        r.veiculo_nome ??
+        r.modeloVeiculo ??
+        r.modelo_veiculo ??
+        "";
+
+      let placa =
+        r.placa ??
+        r.placaVeiculo ??
+        r.placa_veiculo ??
+        "";
+
+      // Alguns sistemas guardam o veículo como um objeto.
+      if (veiculo && typeof veiculo === "object") {
+        placa = placa ||
+          veiculo.placa ||
+          veiculo.placaVeiculo ||
+          veiculo.placa_veiculo ||
+          "";
+
+        veiculo =
+          veiculo.nome ||
+          veiculo.modelo ||
+          veiculo.descricao ||
+          veiculo.identificacao ||
+          "";
+      }
+
+      // Se houver apenas placa, utiliza a placa.
+      if (!veiculo && placa) {
+        return String(placa).trim().toUpperCase();
+      }
+
+      if (!veiculo) {
+        return "";
+      }
+
+      const nome = String(veiculo).trim();
+      const placaTexto = String(placa).trim();
+
+      if (
+        placaTexto &&
+        !nome.toUpperCase().includes(placaTexto.toUpperCase())
+      ) {
+        return `${nome} - ${placaTexto}`.toUpperCase();
+      }
+
+      return nome.toUpperCase();
+    };
+
+    registros.sort((a, b) =>
+      String(obterDataSaida(b)).localeCompare(String(obterDataSaida(a)))
+    );
+
+    // Identifica os veículos que aparecem no relatório.
+    const veiculos = [
+      ...new Set(
+        registros
+          .map(obterVeiculo)
+          .filter(Boolean)
+      )
+    ];
+
+    let identificacaoVeiculo;
+
+    if (veiculos.length === 1) {
+      identificacaoVeiculo = `VEÍCULO: ${veiculos[0]}`;
+    } else if (veiculos.length > 1) {
+      identificacaoVeiculo = `VEÍCULOS: ${veiculos.join(" | ")}`;
+    } else {
+      identificacaoVeiculo = "VEÍCULO: NÃO IDENTIFICADO NOS REGISTROS";
+    }
 
     const totalKm = registros.reduce(
       (soma, r) => soma + Math.max(0, numero(obterKmRodado(r))),
@@ -1653,21 +1728,41 @@ function gerarPDF() {
     const margemDireita = 5;
     const larguraUtil = larguraPagina - margemEsquerda - margemDireita;
 
+    // Cabeçalho do PDF.
+    doc.setTextColor(35, 35, 35);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
+
     doc.text(
       "CONTROLE DE UTILIZAÇÃO DE VEÍCULOS OFICIAIS",
       larguraPagina / 2,
-      8,
+      7,
       { align: "center" }
+    );
+
+    // Identificação do veículo em destaque.
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(22, 101, 52);
+
+    doc.text(
+      identificacaoVeiculo,
+      larguraPagina / 2,
+      13,
+      {
+        align: "center",
+        maxWidth: larguraUtil
+      }
     );
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
+    doc.setTextColor(45, 45, 45);
+
     doc.text(
       `Viagens finalizadas: ${registros.length} | Total de km: ${kmTexto(totalKm)} | Total de litros: ${litrosTexto(totalComb)}`,
       larguraPagina / 2,
-      13,
+      18,
       { align: "center" }
     );
 
@@ -1735,7 +1830,7 @@ function gerarPDF() {
     doc.autoTable({
       head: cabecalho,
       body: corpo,
-      startY: 17,
+      startY: 22,
       margin: {
         left: margemEsquerda,
         right: margemDireita,
@@ -1775,7 +1870,7 @@ function gerarPDF() {
       didParseCell: function (dados) {
         if (dados.section !== "body") return;
 
-        // FASA: fonte menor para números mais compridos.
+        // Ajusta FASA para evitar sobreposição.
         if (dados.column.index === 10) {
           const conteudo = String(dados.cell.text.join(""));
 
@@ -1791,13 +1886,13 @@ function gerarPDF() {
           dados.cell.styles.halign = "center";
         }
 
-        // Números ficam em uma única linha.
+        // Campos numéricos em uma única linha.
         if ([1, 3, 6, 7, 8, 9].includes(dados.column.index)) {
           dados.cell.styles.overflow = "hidden";
           dados.cell.styles.halign = "center";
         }
 
-        // Preserva os três decimais dos litros.
+        // Preserva até três casas decimais nos litros.
         if (dados.column.index === 9) {
           dados.cell.styles.fontSize = 6;
           dados.cell.styles.overflow = "hidden";
@@ -1806,6 +1901,7 @@ function gerarPDF() {
       }
     });
 
+    // Quadro de assinaturas centralizado.
     let yAssinaturas = doc.lastAutoTable.finalY + 10;
     const alturaNecessaria = 42;
 
@@ -1816,6 +1912,8 @@ function gerarPDF() {
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
+    doc.setTextColor(45, 45, 45);
+
     doc.text(
       "CONTROLE DE RUBRICA DOS MOTORISTAS",
       larguraPagina / 2,
@@ -1893,21 +1991,29 @@ function gerarPDF() {
 
     if (yDeclaracao + 10 > alturaPagina - 12) {
       doc.addPage();
+
       doc.text(
         "Declaro que as informações registradas correspondem às viagens realizadas.",
         larguraPagina / 2,
         20,
-        { align: "center", maxWidth: larguraUtil }
+        {
+          align: "center",
+          maxWidth: larguraUtil
+        }
       );
     } else {
       doc.text(
         "Declaro que as informações registradas correspondem às viagens realizadas.",
         larguraPagina / 2,
         yDeclaracao,
-        { align: "center", maxWidth: larguraUtil }
+        {
+          align: "center",
+          maxWidth: larguraUtil
+        }
       );
     }
 
+    // Rodapé e numeração das páginas.
     const totalPaginas = doc.internal.getNumberOfPages();
 
     for (let pagina = 1; pagina <= totalPaginas; pagina++) {
@@ -1935,7 +2041,9 @@ function gerarPDF() {
 
   } catch (erro) {
     console.error("Erro ao gerar PDF:", erro);
-    alert("Não foi possível gerar o PDF. Verifique o console do navegador para mais detalhes.");
+    alert(
+      "Não foi possível gerar o PDF. Verifique o console do navegador para mais detalhes."
+    );
   }
 }
 
